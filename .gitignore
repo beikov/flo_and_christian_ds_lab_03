@@ -4,5 +4,6 @@ build/
 .settings
 
 src/.DS_Store
-
+lib/.DS_Store
+keys/.DS_Store
 .DS_Store
