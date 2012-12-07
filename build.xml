@@ -6,14 +6,14 @@
     <property name="build.dir" value="build"/>
 
     <!-- You need to update these properties!-->
-    <property name="server.name" value="ds02.server.ServerMain"/><!-- Server's full class name (including the package) -->
+    <property name="server.name" value="ds03.server.ServerMain"/><!-- Server's full class name (including the package) -->
     <property name="server.host" value="localhost"/><!-- Auction Server's host -->
-    <property name="client.name" value="ds02.client.ClientMain"/><!-- Bidding Client's full class name (including the package) -->
-    <property name="mgmtclient.name" value="ds02.client.ManagementClientMain"/><!-- Management Client's full class name (including the package) -->
-    <property name="analytics.name" value="ds02.server.AnalyticsServer"/><!-- Analytics Server's full class name (including the package) -->
-    <property name="billing.name" value="ds02.server.BillingServer"/><!-- Billing Server's full class name (including the package) -->
-    <property name="analytics.bindingName" value="ds02.server.service.AnalyticsService"/><!-- RMI Binding Name of the Analytics Server -->
-    <property name="billing.bindingName" value="ds02.server.service.BillingService"/><!-- RMI Binding Name of the Billing Server -->
+    <property name="client.name" value="ds03.client.ClientMain"/><!-- Bidding Client's full class name (including the package) -->
+    <property name="mgmtclient.name" value="ds03.client.ManagementClientMain"/><!-- Management Client's full class name (including the package) -->
+    <property name="analytics.name" value="ds03.server.AnalyticsServer"/><!-- Analytics Server's full class name (including the package) -->
+    <property name="billing.name" value="ds03.server.BillingServer"/><!-- Billing Server's full class name (including the package) -->
+    <property name="analytics.bindingName" value="ds03.server.service.AnalyticsService"/><!-- RMI Binding Name of the Analytics Server -->
+    <property name="billing.bindingName" value="ds03.server.service.BillingService"/><!-- RMI Binding Name of the Billing Server -->
     <property name="server.port" value="10060"/><!-- TCP port -->
 	<!-- new properties for assignment 3 -->
     <property name="server.key" value="keys/auction-server.pem"/><!-- Private key file of Auction Server -->
