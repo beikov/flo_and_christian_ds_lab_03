@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.nio.ByteBuffer;
 
 public class PipedClientConsole extends ClientConsole {
 	
@@ -27,8 +28,11 @@ public class PipedClientConsole extends ClientConsole {
 	public void write(String s){
 		try {
 			final byte[] bytes = s.getBytes();
-			final int size = bytes.length;
-			os.write(size);
+			
+			ByteBuffer sizeBuffer = ByteBuffer.allocate(4);
+			sizeBuffer.putInt(bytes.length);
+			
+			os.write(sizeBuffer.array());
 			os.write(bytes);
 			os.flush();
 		} catch (IOException e) {
@@ -38,9 +42,17 @@ public class PipedClientConsole extends ClientConsole {
 
 	public String read() {
 		try {
-			final int size = is.read();
+			final byte[] sizeBytes = new byte[4];
 			
-			if(size == -1){
+			if(is.read(sizeBytes) != 4){
+				throw new IllegalStateException("Protocol error, not enough bytes are available to read");
+			}
+			
+			final ByteBuffer sizeBuffer = ByteBuffer.allocate(4);
+			sizeBuffer.put(sizeBytes);
+			final int size = sizeBuffer.getInt();
+			
+			if(size < 0){
 				return null;
 			}
 			

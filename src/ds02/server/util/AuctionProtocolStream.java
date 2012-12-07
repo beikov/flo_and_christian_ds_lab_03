@@ -5,6 +5,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 public class AuctionProtocolStream {
 
@@ -19,8 +20,11 @@ public class AuctionProtocolStream {
 	public void write(String response) {
 		try {
 			final byte[] bytes = response.getBytes();
-			final int size = bytes.length;
-			out.write(size);
+			
+			ByteBuffer sizeBuffer = ByteBuffer.allocate(4);
+			sizeBuffer.putInt(bytes.length);
+			
+			out.write(sizeBuffer.array());
 			out.write(bytes);
 			out.flush();
 		} catch (IOException ex) {
@@ -33,7 +37,15 @@ public class AuctionProtocolStream {
 
 	public String read() {
 		try {
-			final int size = in.read();
+			final byte[] sizeBytes = new byte[4];
+			
+			if(in.read(sizeBytes) != 4){
+				throw new IllegalStateException("Protocol error, not enough bytes are available to read");
+			}
+			
+			final ByteBuffer sizeBuffer = ByteBuffer.allocate(4);
+			sizeBuffer.put(sizeBytes);
+			final int size = sizeBuffer.getInt();
 			
 			if(size == -1){
 				return null;
