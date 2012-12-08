@@ -10,6 +10,7 @@ import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import ds03.event.DisconnectedEvent;
 import ds03.event.EventHandler;
@@ -56,11 +57,9 @@ public class AuctionServer {
 
 		final ExecutorService threadPool = Executors
 				.newFixedThreadPool(THREADS);
-
-		/* starts garbage collection */
-		final Timer timer = new Timer();
-
-		timer.scheduleAtFixedRate(AuctionService.REMOVE_TASK, 0, 1000);
+		final ScheduledExecutorService schedulerService = Executors.newScheduledThreadPool(2);
+		
+		AuctionService.INSTANCE.setSchedulerService(schedulerService);
 
 		/*
 		 * We use concurrent hash map for performance and because there is no
@@ -128,7 +127,7 @@ public class AuctionServer {
 					iter.remove();
 				}
 
-				timer.cancel();
+				schedulerService.shutdownNow();
 			}
 		};
 

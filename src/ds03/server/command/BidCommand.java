@@ -10,7 +10,7 @@ import ds03.server.util.Formats;
 
 public class BidCommand implements Command {
 
-	private final AuctionService bidService;
+	protected final AuctionService bidService;
 
 	public BidCommand(AuctionService bidService) {
 		this.bidService = bidService;
@@ -36,6 +36,12 @@ public class BidCommand implements Command {
 				/* Service will throw an exception with a good message */
 			}
 		}
+		
+		doBid(context, id, amount);
+		}
+	
+	protected void doBid(Context context, Long id, BigDecimal amount) {
+
 
 		final Auction auction = bidService.bid(context.getUsername(), id,
 				amount);
@@ -64,5 +70,6 @@ public class BidCommand implements Command {
 		sb.append('.');
 
 		context.getChannel().write(sb.toString());
+
 	}
 }

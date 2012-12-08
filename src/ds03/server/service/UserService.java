@@ -1,6 +1,7 @@
 package ds03.server.service;
 
 import java.io.Serializable;
+import java.util.List;
 
 import ds03.server.AuctionServerUserContext;
 import ds03.server.service.impl.UserServiceImpl;
@@ -15,5 +16,7 @@ public interface UserService extends Serializable {
 			AuctionServerUserContext userConnection);
 
 	public void logout(String username);
+
+	public List<String> getLoggedInUsers();
 
 }

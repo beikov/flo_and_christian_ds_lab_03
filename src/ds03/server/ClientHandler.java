@@ -9,7 +9,9 @@ import ds03.command.util.CommandUtils;
 import ds03.command.util.ExceptionHandler;
 import ds03.io.ProtocolException;
 import ds03.server.command.BidCommand;
+import ds03.server.command.ConfirmCommand;
 import ds03.server.command.CreateCommand;
+import ds03.server.command.GroupBidCommand;
 import ds03.server.command.ListCommand;
 import ds03.server.command.LoginCommand;
 import ds03.server.command.LogoutCommand;
@@ -38,6 +40,9 @@ public class ClientHandler implements Runnable {
 		loggedInCommandMap.put("!login", loginCommand);
 		loggedInCommandMap.put("!logout", logoutCommand);
 
+		loggedInCommandMap.put("!groupBid", new GroupBidCommand(AuctionService.INSTANCE));
+		loggedInCommandMap.put("!confirm", new ConfirmCommand(AuctionService.INSTANCE));
+		
 		loggedInCommandMap.put("!list",
 				new ListCommand(AuctionService.INSTANCE));
 		loggedInCommandMap.put("!create", new CreateCommand(

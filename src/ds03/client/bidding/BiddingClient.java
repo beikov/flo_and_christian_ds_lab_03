@@ -40,6 +40,8 @@ public class BiddingClient implements Client {
 		loggedInCommandMap.put("!list", new DefaultBiddingCommand());
 		loggedInCommandMap.put("!create", new DefaultBiddingCommand());
 		loggedInCommandMap.put("!bid", new DefaultBiddingCommand());
+		loggedInCommandMap.put("!groupBid", new DefaultBiddingCommand());
+		loggedInCommandMap.put("!confirm", new DefaultBiddingCommand());
 	}
 
 	public BiddingClient(ClientConsole out, String host, int tcpPort) {

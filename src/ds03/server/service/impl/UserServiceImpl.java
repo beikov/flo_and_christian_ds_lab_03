@@ -1,5 +1,7 @@
 package ds03.server.service.impl;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -24,6 +26,11 @@ public class UserServiceImpl implements UserService {
 	public AuctionServerUserContext getUser(String username) {
 		checkUsername(username);
 		return users.get(username);
+	}
+	
+	@Override
+	public List<String> getLoggedInUsers() {
+		return new ArrayList<String>(users.keySet());
 	}
 
 	/*
