@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 import ds03.event.DisconnectedEvent;
 import ds03.event.EventHandler;
 import ds03.server.service.AuctionService;
+import ds03.util.SecurityUtils;
 import ds03.util.ServiceLocator;
 
 public class AuctionServer {
@@ -21,11 +22,12 @@ public class AuctionServer {
 	private static final int THREADS = 10000;
 
 	public static void main(String[] args) {
-		if (args.length != 3) {
+		if (args.length != 5) {
 			usage();
 		}
 
 		int port = 0;
+		SecurityUtils.init(0, args[3], args[4]);
 
 		try {
 			port = Integer.parseInt(args[0]);

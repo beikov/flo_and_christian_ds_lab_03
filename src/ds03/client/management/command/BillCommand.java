@@ -16,17 +16,20 @@ public class BillCommand extends AbstractManagementCommand {
 		try {
 			Bill bill = context.getBillingServiceSecure().getBill(args[0]);
 			if (bill == null) {
-				context.getOut().write(
+				context.getOut().writeln(
 						"No bills for user " + args[0] + " exist");
 				return;
 			}
-			context.getOut().write(
+			context.getOut().writeln(
 					"auction_ID strike_price fee_fixed fee_variable fee_total");
 			for (BillLine billLine : bill.getBillLines()) {
-				context.getOut().write(String.format("%-11d%-13.0f%-10.1f%-13.1f%-9.1f%n",
-						billLine.getAuctionId(), billLine.getStrikePrice(),
-						billLine.getFeeFixed(), billLine.getFeeVariable(),
-						billLine.getFeeTotal()));
+				context.getOut().writeln(
+						String.format("%-11d%-13.0f%-10.1f%-13.1f%-9.1f%n",
+								billLine.getAuctionId(),
+								billLine.getStrikePrice(),
+								billLine.getFeeFixed(),
+								billLine.getFeeVariable(),
+								billLine.getFeeTotal()));
 			}
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block

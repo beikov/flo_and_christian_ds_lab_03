@@ -33,7 +33,8 @@ public class UserServiceImpl implements UserService {
 	 * ds03.server.UserConnection)
 	 */
 	@Override
-	public boolean login(String username, AuctionServerUserContext userConnection) {
+	public boolean login(String username,
+			AuctionServerUserContext userConnection) {
 		checkUsername(username);
 
 		if (users.putIfAbsent(username, userConnection) == null) {

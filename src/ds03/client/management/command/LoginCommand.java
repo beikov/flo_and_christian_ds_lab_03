@@ -21,11 +21,11 @@ public class LoginCommand extends AbstractManagementCommand {
 		password = args[1];
 		try {
 			if (context.isLoggedIn()) {
-				context.getOut().write(
+				context.getOut().writeln(
 						"ERROR: You are currently not logged in.");
 
 			} else if (context.login(username, password)) {
-				context.getOut().write(username + " successfully logged in");
+				context.getOut().writeln(username + " successfully logged in");
 			} else {
 				System.err.println("ERROR: Login failed");
 			}

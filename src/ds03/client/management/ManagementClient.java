@@ -1,8 +1,6 @@
 package ds03.client.management;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,63 +19,38 @@ import ds03.client.management.command.SubscribeCommand;
 import ds03.client.management.command.UnsubscribeCommand;
 import ds03.client.util.ClientConsole;
 import ds03.command.Command;
+import ds03.command.util.CommandUtils;
+import ds03.io.ProtocolException;
 import ds03.util.RuntimeUtils;
 import ds03.util.ServiceLocator;
 
 public class ManagementClient implements Client {
 
-	private static final String[] NO_ARGS = new String[0];
 	private final Map<String, Command> loggedInCommandMap = new HashMap<String, Command>();
 	private final Map<String, Command> loggedOutCommandMap = new HashMap<String, Command>();
-	private final ManagementUserContextImpl context;
+	private final ManagementUserContext context;
 
-	private final BufferedReader in;
-	private final PrintStream out;
-
-	public ManagementClient(BufferedReader in, PrintStream out) {
-		this.in = in;
-		this.out = out;
-		this.context = new ManagementUserContextImpl(ClientConsole.fromPrintStream(out));
+	public ManagementClient(InputStream in, PrintStream out) {
+		this.context = new ManagementUserContextImpl(ClientConsole.fromStreams(
+				out, in));
 		assembleCommands();
 	}
 
 	public void run() {
-		String command;
+		final ManagementUserContext con = context; /* avoid getfield opcode */
 
 		while (true) {
-			command = readRequest();
-
-			if (command == null || "!exit".equals(command)) {
+			try {
+				if (!CommandUtils.invokeCommand(readRequest(),
+						con.isLoggedIn() ? loggedInCommandMap
+								: loggedOutCommandMap, con)) {
+					break;
+				}
+			} catch (ProtocolException ex) {
 				break;
 			}
 
-			final String[] commandParts = command.split("\\s");
-			final String commandKey = commandParts[0];
-			final String[] commandArgs;
-
-			if (commandParts.length > 1) {
-				commandArgs = new String[commandParts.length - 1];
-				System.arraycopy(commandParts, 1, commandArgs, 0,
-						commandArgs.length);
-			} else {
-				commandArgs = NO_ARGS;
-			}
-
-			final Command cmd = context.getUsername() == null ? loggedOutCommandMap
-					.get(commandKey) : loggedInCommandMap.get(commandKey);
-
-			if (cmd != null) {
-				try {
-					cmd.execute(context, commandArgs);
-				} catch (Exception ex) {
-					System.err.println(ex.getMessage());
-				}
-			} else {
-				context.getOut().write(
-						"ERROR: Invalid command '" + commandKey + "'");
-			}
 		}
-
 		RuntimeUtils.invokeShutdownHooks();
 	}
 
@@ -91,14 +64,9 @@ public class ManagementClient implements Client {
 
 		sb.append("> ");
 
-		out.print(sb.toString());
-		out.flush();
+		context.getOut().write(sb.toString());
 
-		try {
-			return in.readLine();
-		} catch (IOException e) {
-			return null;
-		}
+		return context.getOut().read();
 	}
 
 	private void assembleCommands() {
@@ -129,8 +97,7 @@ public class ManagementClient implements Client {
 		}
 
 		ServiceLocator.init(args[0], args[1]);
-		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-		new ManagementClient(in, System.out).run();
+		new ManagementClient(System.in, System.out).run();
 	}
 
 	private static void usage() {

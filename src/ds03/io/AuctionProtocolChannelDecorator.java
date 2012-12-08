@@ -1,12 +1,16 @@
 package ds03.io;
 
-public abstract class AuctionProtocolStreamDecorator implements
+public abstract class AuctionProtocolChannelDecorator implements
 		AuctionProtocolChannel {
 	private final AuctionProtocolChannel delegate;
 
-	public AuctionProtocolStreamDecorator(AuctionProtocolChannel delegate) {
+	public AuctionProtocolChannelDecorator(AuctionProtocolChannel delegate) {
 		super();
 		this.delegate = delegate;
+	}
+
+	public AuctionProtocolChannel getDelegate() {
+		return delegate;
 	}
 
 	public void write(String response) {

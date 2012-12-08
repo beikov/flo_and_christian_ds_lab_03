@@ -1,8 +1,6 @@
 package ds03.client.loadtest;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
@@ -55,29 +53,21 @@ public class LoadTestClient implements Client {
 				final PipedOutputStream posIn = new PipedOutputStream();
 				final PipedInputStream pisIn = new PipedInputStream(posIn);
 
-				/* This is the input stream for the client */
-				final BufferedReader in = new BufferedReader(
-						new InputStreamReader(pisIn));
-
 				/*
 				 * This is the outputstream for the client. We probably should
 				 * have used our own interface but that's good enough for now.
 				 */
-				final PipedClientConsole out = ClientConsole.piped();
+				final PipedClientConsole out = ClientConsole.piped(pisIn);
 
-				clients.put(new BiddingClient(in, out, host, tcpPort),
-						new Streams(out, posIn));
+				clients.put(new BiddingClient(out, host, tcpPort), new Streams(
+						out, posIn));
 			}
 
 			/* We can write with this stream to "stdin" */
 			final PipedOutputStream posIn = new PipedOutputStream();
 			final PipedInputStream pisIn = new PipedInputStream(posIn);
 
-			/* This is the input stream for the client */
-			final BufferedReader in = new BufferedReader(new InputStreamReader(
-					pisIn));
-
-			managementClient = new ManagementClient(in, System.out);
+			managementClient = new ManagementClient(pisIn, System.out);
 			managementOut = new PrintStream(posIn);
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
@@ -97,7 +87,7 @@ public class LoadTestClient implements Client {
 		public synchronized String command(String command) {
 			/* Read the prompt */
 			try {
-				in.read();
+				in.readFromPipe();
 			} catch (Exception ex) {
 				throw new RuntimeException(ex);
 			}

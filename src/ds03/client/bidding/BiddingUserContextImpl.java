@@ -2,11 +2,12 @@ package ds03.client.bidding;
 
 import ds03.client.util.ClientConsole;
 import ds03.io.AuctionProtocolChannel;
+import ds03.io.AuctionProtocolChannelDecorator;
 
 public class BiddingUserContextImpl implements BiddingUserContext {
 	private String username;
 	private final ClientConsole clientConsole;
-	private final AuctionProtocolChannel channel;
+	private AuctionProtocolChannel channel;
 
 	public BiddingUserContextImpl(ClientConsole clientConsole,
 			AuctionProtocolChannel channel) {
@@ -34,6 +35,14 @@ public class BiddingUserContextImpl implements BiddingUserContext {
 	@Override
 	public void logout() {
 		this.username = null;
+
+		AuctionProtocolChannel channel = this.channel;
+
+		while (channel instanceof AuctionProtocolChannelDecorator) {
+			channel = ((AuctionProtocolChannelDecorator) channel).getDelegate();
+		}
+
+		this.channel = channel;
 	}
 
 	/*
@@ -70,6 +79,11 @@ public class BiddingUserContextImpl implements BiddingUserContext {
 	@Override
 	public AuctionProtocolChannel getChannel() {
 		return this.channel;
+	}
+
+	@Override
+	public void setChannel(AuctionProtocolChannel channel) {
+		this.channel = channel;
 	}
 
 }

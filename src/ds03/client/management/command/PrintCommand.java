@@ -16,7 +16,7 @@ public class PrintCommand extends AbstractManagementCommand {
 			sb.append("\n");
 		}
 
-		context.getOut().write(sb.toString());
+		context.getOut().writeln(sb.toString());
 	}
 
 }

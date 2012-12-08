@@ -8,7 +8,7 @@ public abstract class AbstractManagementCommand implements Command {
 	public void execute(Context context, String[] params) {
 		execute((ManagementUserContext) context, params);
 	}
-	
+
 	public abstract void execute(ManagementUserContext context, String[] params);
 
 }

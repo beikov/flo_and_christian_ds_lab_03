@@ -7,11 +7,9 @@ import ds03.event.LogoutEvent;
 
 public interface AuctionServerUserContext extends Context {
 
-	
 	public void addLogoutListener(EventHandler<LogoutEvent> handler);
 
-	public void addCloseListener(
-			EventHandler<DisconnectedEvent> handler);
+	public void addCloseListener(EventHandler<DisconnectedEvent> handler);
 
 	public void close();
 

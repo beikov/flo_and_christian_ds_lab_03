@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import ds03.event.AuctionEvent;
 import ds03.event.AuctionSuccessRatioEvent;
@@ -21,6 +22,7 @@ import ds03.event.UserEvent;
 import ds03.event.UserSessiontimeAvgEvent;
 import ds03.event.UserSessiontimeMaxEvent;
 import ds03.event.UserSessiontimeMinEvent;
+import ds03.server.exception.SubscriptionException;
 import ds03.server.service.AnalyticsService;
 
 public class AnalyticsServiceImpl implements AnalyticsService {
@@ -157,13 +159,21 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
 	@Override
 	public String subscribe(final String pattern, final EventCallback handler)
-			throws RemoteException {
-		return subscribe0(pattern, handler);
+			throws RemoteException, SubscriptionException {
+		final Pattern p;
+		try {
+			p = Pattern.compile(pattern);
+		} catch (PatternSyntaxException ex) {
+			throw new SubscriptionException("Invalid Pattern!");
+		}
+		return subscribe0(p, handler);
 	}
 
-	private String subscribe0(final String pattern, final EventCallback handler) {
+	private String subscribe0(String pattern, final EventCallback handler) {
+		return subscribe0(Pattern.compile(pattern), handler);
+	}
 
-		final Pattern p = Pattern.compile(pattern);
+	private String subscribe0(Pattern p, final EventCallback handler) {
 		final String id = Long.toString(subscribeSequence.incrementAndGet());
 
 		for (Map.Entry<String, ConcurrentMap<String, EventCallback>> entry : eventMap

@@ -5,6 +5,7 @@ import java.rmi.RemoteException;
 import ds03.client.management.ManagementUserContext;
 import ds03.event.Event;
 import ds03.event.EventCallback;
+import ds03.server.exception.SubscriptionException;
 import ds03.util.RegistryUtils;
 import ds03.util.ServiceLocator;
 
@@ -29,6 +30,8 @@ public class SubscribeCommand extends AbstractManagementCommand {
 					.getAnalyticsService().subscribe(args[0], ec);
 			System.out.println("Created subscription with ID " + subscriptionID
 					+ " for events using filter '" + args[0] + "'");
+		} catch (SubscriptionException e) {
+			context.getOut().writeln(e.getMessage());
 		} catch (RemoteException e) {
 		}
 	}

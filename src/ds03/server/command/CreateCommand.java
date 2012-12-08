@@ -36,8 +36,8 @@ public class CreateCommand implements Command {
 			}
 		}
 
-		final Auction auction = bidService.createAuction(
-				context.getUsername(), duration, sb.toString());
+		final Auction auction = bidService.createAuction(context.getUsername(),
+				duration, sb.toString());
 
 		sb.insert(0, "An auction '");
 		sb.append("' with id ");

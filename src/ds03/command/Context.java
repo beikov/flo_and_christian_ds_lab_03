@@ -13,7 +13,9 @@ public interface Context {
 	public String getUsername();
 
 	public ClientConsole getOut();
-	
+
 	public AuctionProtocolChannel getChannel();
+
+	public void setChannel(AuctionProtocolChannel channel);
 
 }

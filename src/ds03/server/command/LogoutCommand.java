@@ -10,8 +10,10 @@ public class LogoutCommand implements Command {
 		if (!context.isLoggedIn()) {
 			context.getChannel().write("You have to log in first!");
 		} else {
-			context.getChannel().write("Successfully logged out as "
-					+ context.getUsername() + "!");
+			context.getChannel()
+					.write("Successfully logged out as "
+							+ context.getUsername() + "!");
+
 			context.logout();
 		}
 	}

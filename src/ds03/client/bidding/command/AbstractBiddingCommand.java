@@ -10,7 +10,7 @@ public abstract class AbstractBiddingCommand implements Command {
 	public void execute(Context context, String[] args) {
 		execute((BiddingUserContext) context, args);
 	}
-	
+
 	public abstract void execute(BiddingUserContext context, String[] args);
 
 }

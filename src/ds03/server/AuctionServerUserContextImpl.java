@@ -9,14 +9,15 @@ import ds03.event.EventHandler;
 import ds03.event.LogoutEvent;
 import ds03.event.handler.DefaultEventHandler;
 import ds03.io.AuctionProtocolChannel;
-import ds03.io.AuctionProtocolStreamImpl;
+import ds03.io.AuctionProtocolChannelDecorator;
+import ds03.io.AuctionProtocolChannelImpl;
 
 public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 
 	private final EventBus<DisconnectedEvent> onClose;
 	private final EventBus<LogoutEvent> onLogout;
 	private final Socket tcpSocket;
-	private final AuctionProtocolChannel protocolStream;
+	private AuctionProtocolChannel channel;
 	private String username;
 
 	public AuctionServerUserContextImpl(Socket tcpSocket) {
@@ -25,25 +26,26 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 		this.tcpSocket = tcpSocket;
 
 		try {
-			this.protocolStream = new AuctionProtocolStreamImpl(
+			this.channel = new AuctionProtocolChannelImpl(
 					tcpSocket.getOutputStream(), tcpSocket.getInputStream());
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
 	}
 
-
 	@Override
 	public ClientConsole getOut() {
-		return ClientConsole.out;
+		return ClientConsole.sio;
 	}
 
 	@Override
 	public AuctionProtocolChannel getChannel() {
-		return protocolStream;
+		return channel;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see ds03.server.AuctionServerUserContext#getUsername()
 	 */
 	@Override
@@ -51,7 +53,9 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 		return username;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see ds03.server.AuctionServerUserContext#login(java.lang.String)
 	 */
 	@Override
@@ -80,15 +84,26 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 			throw new IllegalArgumentException("Could not connect to client",
 					ex);
 		}
-		
+
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see ds03.server.AuctionServerUserContext#logout()
 	 */
 	@Override
 	public void logout() {
 		if (isLoggedIn()) {
+			AuctionProtocolChannel channel = this.channel;
+
+			while (channel instanceof AuctionProtocolChannelDecorator) {
+				channel = ((AuctionProtocolChannelDecorator) channel)
+						.getDelegate();
+			}
+
+			this.channel = channel;
+
 			Throwable t = null;
 
 			try {
@@ -115,7 +130,9 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see ds03.server.AuctionServerUserContext#isLoggedIn()
 	 */
 	@Override
@@ -123,23 +140,32 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 		return username != null;
 	}
 
-	/* (non-Javadoc)
-	 * @see ds03.server.AuctionServerUserContext#addLogoutListener(ds03.event.EventHandler)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see ds03.server.AuctionServerUserContext#addLogoutListener(ds03.event.
+	 * EventHandler)
 	 */
 	@Override
 	public void addLogoutListener(EventHandler<LogoutEvent> handler) {
 		onLogout.addHandler(handler);
 	}
 
-	/* (non-Javadoc)
-	 * @see ds03.server.AuctionServerUserContext#addCloseListener(ds03.event.EventHandler)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * ds03.server.AuctionServerUserContext#addCloseListener(ds03.event.EventHandler
+	 * )
 	 */
 	@Override
 	public void addCloseListener(EventHandler<DisconnectedEvent> handler) {
 		onClose.addHandler(handler);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see ds03.server.AuctionServerUserContext#close()
 	 */
 	@Override
@@ -178,5 +204,11 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 				}
 			}
 		}
+	}
+
+	@Override
+	public void setChannel(AuctionProtocolChannel channel) {
+		this.channel = channel;
+
 	}
 }

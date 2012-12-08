@@ -36,7 +36,7 @@ public class AddStepCommand extends AbstractManagementCommand {
 			context.getBillingServiceSecure().createPriceStep(startPrice,
 					endPrice, fixedPrice, variablePricePercent);
 			context.getOut()
-					.write(
+					.writeln(
 							"Step ["
 									+ startPrice
 									+ " "
@@ -44,7 +44,7 @@ public class AddStepCommand extends AbstractManagementCommand {
 											: endPrice)
 									+ "] successfully added");
 		} catch (PriceStepException e) {
-			System.err.println(e.getMessage());
+			context.getOut().writeln(e.getMessage());
 		} catch (Exception e) {
 			LOG.warning("Exception caught");
 		}

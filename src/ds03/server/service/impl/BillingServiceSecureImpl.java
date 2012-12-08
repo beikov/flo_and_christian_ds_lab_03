@@ -62,8 +62,8 @@ public class BillingServiceSecureImpl implements BillingServiceSecure {
 		lock.writeLock().lock();
 
 		try {
-			final PriceStep lower = priceSteps.lower(step);
-			final PriceStep higher = priceSteps.higher(step);
+			final PriceStep lower = priceSteps.floor(step);
+			final PriceStep higher = priceSteps.ceiling(step);
 
 			if (lower != null && lower.getEndPrice() > step.getStartPrice()) {
 				throw new PriceStepException("Overlapping price steps");

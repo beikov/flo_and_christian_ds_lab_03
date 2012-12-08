@@ -10,9 +10,9 @@ public class LogoutCommand extends AbstractManagementCommand {
 			throw new RuntimeException("Usage: !logout");
 		}
 		if (!context.isLoggedIn()) {
-			context.getOut().write("You have to log in first!");
+			context.getOut().writeln("You have to log in first!");
 		} else {
-			context.getOut().write(
+			context.getOut().writeln(
 					context.getUsername() + " successfully logged out");
 			context.logout();
 		}

@@ -15,7 +15,7 @@ public class RemoveStepCommand extends AbstractManagementCommand {
 			throw new RuntimeException(
 					"Usage: !removeStep <startPrice> <endPrice>");
 		}
-		
+
 		double startPrice;
 		double endPrice;
 
@@ -35,7 +35,7 @@ public class RemoveStepCommand extends AbstractManagementCommand {
 					endPrice);
 
 			context.getOut()
-					.write(
+					.writeln(
 							"Price step ["
 									+ startPrice
 									+ " "

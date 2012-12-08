@@ -37,8 +37,8 @@ public class BidCommand implements Command {
 			}
 		}
 
-		final Auction auction = bidService.bid(context.getUsername(),
-				id, amount);
+		final Auction auction = bidService.bid(context.getUsername(), id,
+				amount);
 		final boolean success = auction.getBidValue().compareTo(amount) < 0;
 		final StringBuilder sb = new StringBuilder();
 

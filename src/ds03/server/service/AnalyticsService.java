@@ -6,10 +6,11 @@ import java.rmi.RemoteException;
 
 import ds03.event.Event;
 import ds03.event.EventCallback;
+import ds03.server.exception.SubscriptionException;
 
 public interface AnalyticsService extends Remote, Serializable {
 	public String subscribe(String pattern, EventCallback handler)
-			throws RemoteException;
+			throws RemoteException, SubscriptionException;
 
 	public void processEvent(Event event) throws RemoteException;
 

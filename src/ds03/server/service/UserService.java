@@ -11,7 +11,8 @@ public interface UserService extends Serializable {
 
 	public AuctionServerUserContext getUser(String username);
 
-	public boolean login(String username, AuctionServerUserContext userConnection);
+	public boolean login(String username,
+			AuctionServerUserContext userConnection);
 
 	public void logout(String username);
 

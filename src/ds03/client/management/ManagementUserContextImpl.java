@@ -121,7 +121,7 @@ public class ManagementUserContextImpl implements ManagementUserContext {
 		if (!isAuto()) {
 			eventSet.add(event);
 		} else {
-			clientConsole.write(event.toString());
+			clientConsole.writeln(event.toString());
 		}
 	}
 
@@ -171,6 +171,10 @@ public class ManagementUserContextImpl implements ManagementUserContext {
 	@Override
 	public AuctionProtocolChannel getChannel() {
 		return null;
+	}
+
+	public void setChannel(AuctionProtocolChannel apc) {
+
 	}
 
 }

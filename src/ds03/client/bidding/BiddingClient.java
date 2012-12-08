@@ -1,37 +1,54 @@
 package ds03.client.bidding;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
 import ds03.client.Client;
-import ds03.client.loadtest.LoadTestClient;
+import ds03.client.bidding.command.DefaultBiddingCommand;
+import ds03.client.bidding.command.LoginCommand;
+import ds03.client.bidding.command.LogoutCommand;
 import ds03.client.util.ClientConsole;
-import ds03.io.AuctionProtocolStreamImpl;
-import ds03.util.ServiceLocator;
+import ds03.command.Command;
+import ds03.command.util.CommandUtils;
+import ds03.command.util.ExceptionHandler;
+import ds03.io.AuctionProtocolChannelImpl;
+import ds03.io.MessageIntegrityException;
+import ds03.util.SecurityUtils;
 
 public class BiddingClient implements Client {
 
 	private static final Logger LOG = Logger.getLogger(BiddingClient.class);
-	private final BufferedReader in;
-	private final ClientConsole clientConsole;
+	private static Map<String, Command> loggedOutCommandMap = new HashMap<String, Command>();
+	private static Map<String, Command> loggedInCommandMap = new HashMap<String, Command>();
 	private final BiddingUserContext context;
 	/* Socket connection to server */
 	private final Socket socket;
-	
+
 	private final Runnable shutdownHook;
 
-	public BiddingClient(BufferedReader in, ClientConsole out, String host,
-			int tcpPort) {
-		this.in = in;
-		this.clientConsole = out;
+	static {
+
+		loggedOutCommandMap.put("!login", new LoginCommand());
+		loggedOutCommandMap.put("!logout", new LogoutCommand());
+		loggedOutCommandMap.put("!list", new DefaultBiddingCommand());
+
+		loggedInCommandMap.put("!login", new LoginCommand());
+		loggedInCommandMap.put("!logout", new LogoutCommand());
+		loggedInCommandMap.put("!list", new DefaultBiddingCommand());
+		loggedInCommandMap.put("!create", new DefaultBiddingCommand());
+		loggedInCommandMap.put("!bid", new DefaultBiddingCommand());
+	}
+
+	public BiddingClient(ClientConsole out, String host, int tcpPort) {
 		try {
 			this.socket = new Socket(host, tcpPort);
 
-			context = new BiddingUserContextImpl(out, new AuctionProtocolStreamImpl(
-					socket.getOutputStream(), socket.getInputStream()));
+			context = new BiddingUserContextImpl(out,
+					new AuctionProtocolChannelImpl(socket.getOutputStream(),
+							socket.getInputStream()));
 
 		} catch (Exception ex) {
 			throw new RuntimeException("Could not connect to server", ex);
@@ -57,64 +74,36 @@ public class BiddingClient implements Client {
 	}
 
 	public void run() {
-		String user = null;
-		String command;
-		String prompt = "> ";
+
+		final BiddingUserContext con = context; /* avoid getfield opcode */
 
 		while (true) {
-			try {
-				command = prompt(prompt);
-			} catch (Exception ex) {
-				command = null;
-			}
+			final String request = readRequest();
 
-			if (command == null || "!exit".equals(command)) {
-				break;
-			}
+			if (!con.isLoggedIn()) {
+				if (!CommandUtils.invokeCommand(request, loggedOutCommandMap,
+						con)) {
+					break;
+				}
+			} else {
 
-			final String[] commandParts = command.split("\\s+");
-			final boolean loginCommand = "!login".equals(commandParts[0]);
-			final boolean logoutCommand = "!logout".equals(commandParts[0]);
+				if (!CommandUtils.invokeCommand(request, loggedInCommandMap,
+						con, new ExceptionHandler() {
 
-			try {
-				if (loginCommand) {
-					if (user == null && commandParts.length > 1) {
-						/*
-						 * Extract user name out of the command so we can show
-						 * it in the prompt and also start the notification
-						 * handler
-						 */
-						user = commandParts[1];
-					}
+							@Override
+							public void onException(Exception ex) {
+								if (ex instanceof MessageIntegrityException) {
+									con.getOut().writeln(ex.getMessage());
+									CommandUtils.invokeCommand(request,
+											loggedInCommandMap, con);
+								} else {
+									con.getOut().write(ex.getMessage());
+								}
+							}
+						})) {
+					break;
 				}
 
-				context.getChannel().write(command);
-
-				/*
-				 * In case we get a ClassCastException, we don't care since we
-				 * have to terminate the connection and so on anyway
-				 */
-				final String result = context.getChannel().read();
-
-				if (logoutCommand
-						|| (loginCommand && !result.contains("Successfully") && user != null)) {
-					/* Here we have either a logout or an unsuccessful login */
-					user = null;
-					prompt = "> ";
-				} else if (user != null) {
-					/* Successful login */
-					prompt = user + "> ";
-				}
-
-				clientConsole.write(result);
-			} catch (Exception ex) {
-				try {
-					clientConsole.write("Server terminated connection");
-				} catch (Exception e) {
-					// Ignore since we will exit anyways
-				}
-
-				break;
 			}
 		}
 
@@ -122,15 +111,19 @@ public class BiddingClient implements Client {
 	}
 
 	public static void main(String[] args) {
-		if (args.length != 2 && args.length != 3) {
+		if (args.length != 5) {
 			usage();
 		}
 
 		String host = args[0];
 		int tcpPort = 0;
+		int udpPort = 0;
+		String pathToPublicKey = args[3];
+		String pathToClientKeyDir = args[4];
 
 		try {
 			tcpPort = Integer.parseInt(args[1]);
+			udpPort = Integer.parseInt(args[2]);
 		} catch (NumberFormatException ex) {
 			LOG.error(ex);
 			usage();
@@ -139,16 +132,8 @@ public class BiddingClient implements Client {
 		final Client client;
 
 		try {
-			if (args.length == 3) {
-				/* Create load test */
-				ServiceLocator.init(args[2], null);
-				client = new LoadTestClient(host, tcpPort);
-			} else {
-				final BufferedReader in = new BufferedReader(
-						new InputStreamReader(System.in));
-
-				client = new BiddingClient(in, ClientConsole.out, host, tcpPort);
-			}
+			client = new BiddingClient(ClientConsole.sio, host, tcpPort);
+			SecurityUtils.init(udpPort, pathToPublicKey, pathToClientKeyDir);
 		} catch (Exception ex) {
 			throw new RuntimeException("Could not instantiate client", ex);
 		}
@@ -162,8 +147,33 @@ public class BiddingClient implements Client {
 		System.exit(1);
 	}
 
-	public String prompt(String prompt) throws Exception {
-		clientConsole.write(prompt);
-		return in.readLine();
+	private String readRequest() {
+		StringBuilder sb = new StringBuilder();
+
+		if (context.isLoggedIn()) {
+			sb.append(context.getUsername());
+
+		}
+
+		sb.append("> ");
+
+		context.getOut().write(sb.toString());
+
+		final String request = context.getOut().read();
+		final String[] parts = request.split("\\s");
+		final StringBuilder resultSb = new StringBuilder(request.length()
+				+ parts[0].length() + 1);
+
+		resultSb.append(parts[0]).append(" ");
+
+		if (parts.length > 1) {
+			for (int i = 0; i < parts.length - 1; i++) {
+				resultSb.append(parts[i]);
+				resultSb.append(" ");
+			}
+		}
+
+		resultSb.append(parts[parts.length - 1]);
+		return resultSb.toString();
 	}
 }
