@@ -59,8 +59,8 @@ public class LoadTestClient implements Client {
 				 */
 				final PipedClientConsole out = ClientConsole.piped(pisIn);
 
-				clients.put(new BiddingClient(out, host, tcpPort), new Streams(
-						out, posIn));
+				clients.put(new BiddingClient(out, host, tcpPort, 10061 + i),
+						new Streams(out, posIn));
 			}
 
 			/* We can write with this stream to "stdin" */

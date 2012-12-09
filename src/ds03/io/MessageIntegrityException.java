@@ -2,6 +2,8 @@ package ds03.io;
 
 public class MessageIntegrityException extends RuntimeException {
 
+	private static final long serialVersionUID = 1L;
+
 	public MessageIntegrityException() {
 		super();
 	}

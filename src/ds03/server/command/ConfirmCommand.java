@@ -4,9 +4,7 @@ import java.math.BigDecimal;
 
 import ds03.command.Command;
 import ds03.command.Context;
-import ds03.model.Auction;
 import ds03.server.service.AuctionService;
-import ds03.server.util.Formats;
 
 public class ConfirmCommand implements Command {
 
@@ -41,7 +39,7 @@ public class ConfirmCommand implements Command {
 		if (args.length > 2) {
 			user = args[2];
 		}
-		
+
 		bidService.confirm(userContext.getUsername(), auctionId, amount, user);
 		userContext.getChannel().write("!confirmed");
 	}

@@ -25,15 +25,21 @@ public class HandshakeUtils {
 	public static AuctionProtocolChannel startHandshake(Context context,
 			String username, PrivateKey privateKey, Key hmacKey) {
 		try {
+
 			/*
 			 * 1st step of the handshake: Send handshake request encrypted with
 			 * server public key
 			 */
 			String clientChallenge = SecurityUtils.getRandomBytes(32);
-			String handshakeRequest = SecurityUtils.encryptRsa(
-					new StringBuilder("!login ").append(username).append(" ")
-							.append(clientChallenge).toString(),
-					SecurityUtils.getServerPublicKey());
+			String handshakeRequest = SecurityUtils
+					.encryptRsa(
+							new StringBuilder("!login ")
+									.append(username)
+									.append(" ")
+									.append(context.getNotificationEndpoint()
+											.getPort()).append(" ")
+									.append(clientChallenge).toString(),
+							SecurityUtils.getServerPublicKey());
 
 			context.getChannel().write(handshakeRequest);
 
@@ -56,11 +62,11 @@ public class HandshakeUtils {
 			Key secretKey = new SecretKeySpec(Base64.decode(answerParts[3]
 					.getBytes()), "AES");
 
-			AuctionProtocolChannel encryptedChannel = 
-					new ClientHMACAuctionProtocolChannel(new AESAuctionProtocolChannel(
+			AuctionProtocolChannel encryptedChannel = new ClientHMACAuctionProtocolChannel(
+					new AESAuctionProtocolChannel(
 							new Base64AuctionProtocolChannel(
 									context.getChannel()), secretKey,
-					Base64.decode(answerParts[4])), hmacKey);
+							Base64.decode(answerParts[4])), hmacKey);
 
 			/* 3rd step of handshake: Write challenge back encrypted with AES */
 			encryptedChannel.write(serverChallenge);
@@ -96,9 +102,11 @@ public class HandshakeUtils {
 
 			context.getChannel().write(response);
 
-			AuctionProtocolChannel encryptedChannel = new ServerHMACAuctionProtocolChannel(new AESAuctionProtocolChannel(
-					new Base64AuctionProtocolChannel(context.getChannel()),
-					key, Base64.decode(iv)), hmacKey);
+			AuctionProtocolChannel encryptedChannel = new ServerHMACAuctionProtocolChannel(
+					new AESAuctionProtocolChannel(
+							new Base64AuctionProtocolChannel(
+									context.getChannel()), key,
+							Base64.decode(iv)), hmacKey);
 
 			/* 3rd step of handshake: Read server challenge with AES */
 			String readChallenge = encryptedChannel.read();

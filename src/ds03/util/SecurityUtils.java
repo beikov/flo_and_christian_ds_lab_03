@@ -1,7 +1,6 @@
 package ds03.util;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.security.Key;
@@ -11,6 +10,9 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.Signature;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -33,6 +35,10 @@ public class SecurityUtils {
 	private static PrivateKey serverPrivateKey;
 	private static PublicKey serverPublicKey;
 
+	private static final ConcurrentMap<String, PrivateKey> cachedPrivateKeys = new ConcurrentHashMap<String, PrivateKey>();
+	private static final ConcurrentMap<String, PublicKey> cachedPublicKeys = new ConcurrentHashMap<String, PublicKey>();
+	private static final ConcurrentMap<String, SecretKey> cachedSecretKeys = new ConcurrentHashMap<String, SecretKey>();
+
 	public static void init(int udpPort, String pathToPublicKey,
 			String pathToClientKeyDir) {
 		SecurityUtils.udpPort = udpPort;
@@ -50,50 +56,80 @@ public class SecurityUtils {
 	}
 
 	public static PublicKey getPublicKey(String pathToPublicKey) {
-		PEMReader in = null;
+		if (!cachedPublicKeys.containsKey(pathToPublicKey)) {
 
-		try {
-			in = new PEMReader(new FileReader(pathToPublicKey));
-			return (PublicKey) in.readObject();
-		} catch (Exception e) {
-			return null;
-		} finally {
-			if (in != null) {
-				try {
-					in.close();
-				} catch (IOException e) {
+			PEMReader in = null;
+
+			try {
+				in = new PEMReader(new FileReader(pathToPublicKey));
+				cachedPublicKeys.putIfAbsent(pathToPublicKey,
+						(PublicKey) in.readObject());
+			} catch (Exception e) {
+				return null;
+			} finally {
+				if (in != null) {
+					try {
+						in.close();
+					} catch (IOException e) {
+					}
 				}
 			}
 		}
 
+		return cachedPublicKeys.get(pathToPublicKey);
 	}
 
 	public static PrivateKey getPrivateKey(String pathToPrivateKey,
-			final String passphrase) {
-		PEMReader in = null;
+			final PasswordFinder passwordFinder) {
+		if (!cachedPrivateKeys.containsKey(pathToPrivateKey)) {
 
-		try {
-			in = new PEMReader(new FileReader(pathToPrivateKey),
-					new PasswordFinder() {
-						@Override
-						public char[] getPassword() {
+			PEMReader in = null;
 
-							return passphrase.toCharArray();
-						}
-					});
+			try {
+				in = new PEMReader(new FileReader(pathToPrivateKey),
+						passwordFinder);
+				KeyPair keyPair = (KeyPair) in.readObject();
+				cachedPrivateKeys.putIfAbsent(pathToPrivateKey,
+						keyPair.getPrivate());
 
-			KeyPair keyPair = (KeyPair) in.readObject();
-			return keyPair.getPrivate();
-		} catch (Exception e) {
-			return null;
-		} finally {
-			if (in != null) {
-				try {
-					in.close();
-				} catch (IOException e) {
+			} catch (Exception e) {
+				return null;
+			} finally {
+				if (in != null) {
+					try {
+						in.close();
+					} catch (IOException e) {
+					}
 				}
 			}
 		}
+		return cachedPrivateKeys.get(pathToPrivateKey);
+	}
+
+	public static SecretKey getSecretKey(String pathToSecretKey) {
+		if (!cachedSecretKeys.containsKey(pathToSecretKey)) {
+
+			byte[] keyBytes = new byte[1024];
+			FileInputStream fis = null;
+
+			try {
+				fis = new FileInputStream(pathToSecretKey);
+				fis.read(keyBytes);
+				fis.close();
+				byte[] input = Hex.decode(keyBytes);
+				cachedSecretKeys.putIfAbsent(pathToSecretKey, new SecretKeySpec(input, "HmacSHA256"));
+			} catch (Exception e) {
+				return null;
+			} finally {
+				if (fis != null) {
+					try {
+						fis.close();
+					} catch (IOException e) {
+					}
+				}
+			}
+		}
+		return cachedSecretKeys.get(pathToSecretKey);
 
 	}
 
@@ -129,7 +165,13 @@ public class SecurityUtils {
 
 	public static synchronized PrivateKey getServerPrivateKey() {
 		if (serverPrivateKey == null) {
-			serverPrivateKey = getPrivateKey(pathToPublicKey, "23456");
+			serverPrivateKey = getPrivateKey(pathToPublicKey, new PasswordFinder() {
+				@Override
+				public char[] getPassword() {
+
+					return "23456".toCharArray();
+				}
+			});
 
 			if (serverPrivateKey == null) {
 				throw new RuntimeException("Key not found.");
@@ -181,30 +223,35 @@ public class SecurityUtils {
 		byte[] hmacBytes = Base64.decode(hmac);
 		String calculatedHmac = createHmac(text, key);
 		return calculatedHmac != null
-				&& MessageDigest.isEqual(hmacBytes, Base64.decode(calculatedHmac));
+				&& MessageDigest.isEqual(hmacBytes,
+						Base64.decode(calculatedHmac));
 	}
 
-	public static Key getSecretKey(String pathToSecretKey) {
-		byte[] keyBytes = new byte[1024];
-		FileInputStream fis = null;
-		
+	public static String createSignature(String response, PrivateKey key) {
 		try {
-			fis = new FileInputStream(pathToSecretKey);
-			fis.read(keyBytes);
-			fis.close();
-			byte[] input = Hex.decode(keyBytes);
-			return new SecretKeySpec(input, "HmacSHA256");
+			Signature signature = 
+					Signature.getInstance("SHA1withRSA");
+			signature.initSign(key);
+			signature.update(response.getBytes());
+			
+			return new String(Base64.encode(signature.sign()));
 		} catch (Exception e) {
 			return null;
-		} finally {
-			if(fis != null){
-				try {
-					fis.close();
-				} catch (IOException e) {
-				}
-			}
 		}
-	
 	}
+
+	public static boolean verifySignature(String response, PublicKey key, String signature) {
+		try {
+			Signature sig = 
+					Signature.getInstance("SHA1withRSA");
+			sig.initVerify(key);
+			sig.update(response.getBytes());
+			
+			return sig.verify(Base64.decode(signature));
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
 
 }

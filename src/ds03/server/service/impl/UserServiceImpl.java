@@ -27,7 +27,7 @@ public class UserServiceImpl implements UserService {
 		checkUsername(username);
 		return users.get(username);
 	}
-	
+
 	@Override
 	public List<String> getLoggedInUsers() {
 		return new ArrayList<String>(users.keySet());

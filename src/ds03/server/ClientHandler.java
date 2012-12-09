@@ -11,10 +11,12 @@ import ds03.io.ProtocolException;
 import ds03.server.command.BidCommand;
 import ds03.server.command.ConfirmCommand;
 import ds03.server.command.CreateCommand;
+import ds03.server.command.GetClientListCommand;
 import ds03.server.command.GroupBidCommand;
 import ds03.server.command.ListCommand;
 import ds03.server.command.LoginCommand;
 import ds03.server.command.LogoutCommand;
+import ds03.server.command.SignedBidCommand;
 import ds03.server.service.AuctionService;
 import ds03.server.service.UserService;
 import ds03.util.SecurityUtils;
@@ -22,7 +24,7 @@ import ds03.util.SecurityUtils;
 public class ClientHandler implements Runnable {
 
 	private static final Pattern handshakePattern = Pattern
-			.compile("!login [a-zA-Z0-9_\\-]+ [a-zA-Z0-9/+]{43}=");
+			.compile("!login [a-zA-Z0-9_\\-]+ [1-9][0-9]{0,4} [a-zA-Z0-9/+]{43}=");
 	private static final Map<String, Command> loggedOutCommandMap = new HashMap<String, Command>();
 	private static final Map<String, Command> loggedInCommandMap = new HashMap<String, Command>();
 	private static final Command logoutCommand;
@@ -30,6 +32,7 @@ public class ClientHandler implements Runnable {
 
 	static {
 		final Command loginCommand = new LoginCommand(UserService.INSTANCE);
+		final Command bidCommand = new BidCommand(AuctionService.INSTANCE);
 		logoutCommand = new LogoutCommand();
 
 		loggedOutCommandMap.put("!login", loginCommand);
@@ -40,14 +43,18 @@ public class ClientHandler implements Runnable {
 		loggedInCommandMap.put("!login", loginCommand);
 		loggedInCommandMap.put("!logout", logoutCommand);
 
-		loggedInCommandMap.put("!groupBid", new GroupBidCommand(AuctionService.INSTANCE));
-		loggedInCommandMap.put("!confirm", new ConfirmCommand(AuctionService.INSTANCE));
-		
+		loggedInCommandMap.put("!groupBid", new GroupBidCommand(
+				AuctionService.INSTANCE));
+		loggedInCommandMap.put("!confirm", new ConfirmCommand(
+				AuctionService.INSTANCE));
+		loggedInCommandMap.put("!getClientList", new GetClientListCommand(
+				UserService.INSTANCE));
 		loggedInCommandMap.put("!list",
 				new ListCommand(AuctionService.INSTANCE));
 		loggedInCommandMap.put("!create", new CreateCommand(
 				AuctionService.INSTANCE));
-		loggedInCommandMap.put("!bid", new BidCommand(AuctionService.INSTANCE));
+		loggedInCommandMap.put("!bid", bidCommand);
+		loggedInCommandMap.put("!signedBid", new SignedBidCommand(bidCommand));
 	}
 
 	public ClientHandler(final AuctionServerUserContextImpl context) {

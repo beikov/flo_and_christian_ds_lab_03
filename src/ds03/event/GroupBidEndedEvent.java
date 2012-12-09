@@ -4,7 +4,7 @@ public class GroupBidEndedEvent {
 
 	private final boolean success;
 	private final String message;
-	
+
 	public GroupBidEndedEvent(boolean success, String message) {
 		super();
 		this.success = success;

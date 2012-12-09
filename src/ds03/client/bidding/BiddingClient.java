@@ -3,11 +3,16 @@ package ds03.client.bidding;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
 import ds03.client.Client;
+import ds03.client.bidding.command.BidCommand;
 import ds03.client.bidding.command.DefaultBiddingCommand;
+import ds03.client.bidding.command.GetClientListCommand;
 import ds03.client.bidding.command.LoginCommand;
 import ds03.client.bidding.command.LogoutCommand;
 import ds03.client.util.ClientConsole;
@@ -21,37 +26,42 @@ import ds03.util.SecurityUtils;
 public class BiddingClient implements Client {
 
 	private static final Logger LOG = Logger.getLogger(BiddingClient.class);
+	private static final Command loginCommand;
 	private static Map<String, Command> loggedOutCommandMap = new HashMap<String, Command>();
 	private static Map<String, Command> loggedInCommandMap = new HashMap<String, Command>();
 	private final BiddingUserContext context;
-	/* Socket connection to server */
-	private final Socket socket;
+	private final GetTimestampThread getTimeStampThread;
+	private final ScheduledExecutorService schedulerService;
 
 	private final Runnable shutdownHook;
 
 	static {
+		Command getClientListCommand = new GetClientListCommand();
+		loginCommand = new LoginCommand(getClientListCommand);
+		Command logoutCommand = new LogoutCommand();
+		Command defaulCommand = new DefaultBiddingCommand();
 
-		loggedOutCommandMap.put("!login", new LoginCommand());
-		loggedOutCommandMap.put("!logout", new LogoutCommand());
-		loggedOutCommandMap.put("!list", new DefaultBiddingCommand());
+		loggedOutCommandMap.put("!login", loginCommand);
+		loggedOutCommandMap.put("!logout", logoutCommand);
+		loggedOutCommandMap.put("!list", defaulCommand);
 
-		loggedInCommandMap.put("!login", new LoginCommand());
-		loggedInCommandMap.put("!logout", new LogoutCommand());
-		loggedInCommandMap.put("!list", new DefaultBiddingCommand());
-		loggedInCommandMap.put("!create", new DefaultBiddingCommand());
-		loggedInCommandMap.put("!bid", new DefaultBiddingCommand());
-		loggedInCommandMap.put("!groupBid", new DefaultBiddingCommand());
-		loggedInCommandMap.put("!confirm", new DefaultBiddingCommand());
+		loggedInCommandMap.put("!login", loginCommand);
+		loggedInCommandMap.put("!logout", logoutCommand);
+		loggedInCommandMap.put("!list", defaulCommand);
+		loggedInCommandMap.put("!create", defaulCommand);
+		loggedInCommandMap.put("!bid", new BidCommand());
+		loggedInCommandMap.put("!groupBid", defaulCommand);
+		loggedInCommandMap.put("!confirm", defaulCommand);
+		loggedInCommandMap.put("!getClientList", getClientListCommand);
 	}
 
-	public BiddingClient(ClientConsole out, String host, int tcpPort) {
+	public BiddingClient(ClientConsole out, String host, int tcpPort,
+			int notificationPort) {
 		try {
-			this.socket = new Socket(host, tcpPort);
-
-			context = new BiddingUserContextImpl(out,
-					new AuctionProtocolChannelImpl(socket.getOutputStream(),
-							socket.getInputStream()));
-
+			context = new BiddingUserContextImpl(out, host, tcpPort,
+					notificationPort);
+			getTimeStampThread = new GetTimestampThread(context);
+			schedulerService = Executors.newScheduledThreadPool(1);
 		} catch (Exception ex) {
 			throw new RuntimeException("Could not connect to server", ex);
 		}
@@ -60,15 +70,9 @@ public class BiddingClient implements Client {
 
 			@Override
 			public void run() {
-
-				if (BiddingClient.this.socket != null) {
-					try {
-						BiddingClient.this.socket.close();
-					} catch (Exception ex1) {
-						// Ignore
-					}
-				}
-
+				context.close();
+				getTimeStampThread.kill();
+				schedulerService.shutdownNow();
 			}
 		};
 
@@ -78,34 +82,50 @@ public class BiddingClient implements Client {
 	public void run() {
 
 		final BiddingUserContext con = context; /* avoid getfield opcode */
+		final ServerReconnectorTask reconnectorTask = new ServerReconnectorTask(
+				con, schedulerService, loginCommand);
+		getTimeStampThread.start();
 
 		while (true) {
+			if (con.getChannel().isClosed() && con.isLoggedIn()) {
+				reconnectorTask.run();
+			}
+			
 			final String request = readRequest();
+			
+			if (con.getChannel().isClosed() && con.isLoggedIn()) {
+				reconnectorTask.run();
+			}
 
-			if (!con.isLoggedIn()) {
-				if (!CommandUtils.invokeCommand(request, loggedOutCommandMap,
-						con)) {
-					break;
-				}
-			} else {
+			try {
+				if (!con.isLoggedIn()) {
+					if (!CommandUtils.invokeCommand(request,
+							loggedOutCommandMap, con)) {
+						break;
+					}
+				} else {
 
-				if (!CommandUtils.invokeCommand(request, loggedInCommandMap,
-						con, new ExceptionHandler() {
+					if (!CommandUtils.invokeCommand(request,
+							loggedInCommandMap, con, new ExceptionHandler() {
 
-							@Override
-							public void onException(Exception ex) {
-								if (ex instanceof MessageIntegrityException) {
-									con.getOut().writeln(ex.getMessage());
-									CommandUtils.invokeCommand(request,
-											loggedInCommandMap, con);
-								} else {
-									con.getOut().write(ex.getMessage());
+								@Override
+								public void onException(Exception ex) {
+									if (ex instanceof MessageIntegrityException) {
+										con.getOut().writeln(ex.getMessage());
+										CommandUtils.invokeCommand(request,
+												loggedInCommandMap, con);
+									} else {
+										con.getOut().write(ex.getMessage());
+									}
 								}
-							}
-						})) {
-					break;
-				}
+							})) {
+						break;
+					}
 
+				}
+			} catch (Exception e) {
+				con.getOut().write("ERROR: Connection to server terminated");
+				break;
 			}
 		}
 
@@ -119,13 +139,13 @@ public class BiddingClient implements Client {
 
 		String host = args[0];
 		int tcpPort = 0;
-		int udpPort = 0;
+		int notificationPort = 0;
 		String pathToPublicKey = args[3];
 		String pathToClientKeyDir = args[4];
 
 		try {
 			tcpPort = Integer.parseInt(args[1]);
-			udpPort = Integer.parseInt(args[2]);
+			notificationPort = Integer.parseInt(args[2]);
 		} catch (NumberFormatException ex) {
 			LOG.error(ex);
 			usage();
@@ -134,8 +154,10 @@ public class BiddingClient implements Client {
 		final Client client;
 
 		try {
-			client = new BiddingClient(ClientConsole.sio, host, tcpPort);
-			SecurityUtils.init(udpPort, pathToPublicKey, pathToClientKeyDir);
+			client = new BiddingClient(ClientConsole.sio, host, tcpPort,
+					notificationPort);
+			SecurityUtils.init(notificationPort, pathToPublicKey,
+					pathToClientKeyDir);
 		} catch (Exception ex) {
 			throw new RuntimeException("Could not instantiate client", ex);
 		}
@@ -144,8 +166,10 @@ public class BiddingClient implements Client {
 	}
 
 	private static void usage() {
-		System.out.println("Usage: " + BiddingClient.class.getSimpleName()
-				+ " <host> <tcpPort>");
+		System.out
+				.println("Usage: "
+						+ BiddingClient.class.getSimpleName()
+						+ " <host> <tcpPort> <notificationPort> <pathToServerPublickey> <pathToClientKeysDir>");
 		System.exit(1);
 	}
 

@@ -8,6 +8,7 @@ import ds03.client.util.ClientConsole;
 import ds03.event.Event;
 import ds03.io.AuctionProtocolChannel;
 import ds03.server.service.BillingServiceSecure;
+import ds03.util.NotificationEndpoint;
 import ds03.util.ServiceLocator;
 
 public class ManagementUserContextImpl implements ManagementUserContext {
@@ -21,6 +22,11 @@ public class ManagementUserContextImpl implements ManagementUserContext {
 
 	public ManagementUserContextImpl(ClientConsole clientConsole) {
 		this.clientConsole = clientConsole;
+	}
+
+	@Override
+	public NotificationEndpoint getNotificationEndpoint() {
+		return null;
 	}
 
 	/*

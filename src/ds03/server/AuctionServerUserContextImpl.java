@@ -11,23 +11,26 @@ import ds03.event.handler.DefaultEventHandler;
 import ds03.io.AuctionProtocolChannel;
 import ds03.io.AuctionProtocolChannelDecorator;
 import ds03.io.AuctionProtocolChannelImpl;
+import ds03.util.NotificationEndpoint;
 
 public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 
 	private final EventBus<DisconnectedEvent> onClose;
 	private final EventBus<LogoutEvent> onLogout;
-	private final Socket tcpSocket;
 	private AuctionProtocolChannel channel;
 	private String username;
+	private String ipAddress;
+	private NotificationEndpoint notificationEndpoint;
+	private volatile boolean closed = false;
 
 	public AuctionServerUserContextImpl(Socket tcpSocket) {
 		this.onClose = new EventBus<DisconnectedEvent>();
 		this.onLogout = new EventBus<LogoutEvent>();
-		this.tcpSocket = tcpSocket;
 
 		try {
-			this.channel = new AuctionProtocolChannelImpl(
-					tcpSocket.getOutputStream(), tcpSocket.getInputStream());
+			this.ipAddress = tcpSocket
+					.getInetAddress().getHostAddress();
+			this.channel = new AuctionProtocolChannelImpl(tcpSocket);
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
@@ -60,6 +63,17 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 	 */
 	@Override
 	public boolean login(final String username, final String password) {
+		throw new RuntimeException("No notification port given");
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see ds03.server.AuctionServerUserContext#login(java.lang.String)
+	 */
+	@Override
+	public boolean login(final String username, final String password,
+			final int notificationPort) {
 		if (username == null || username.isEmpty()) {
 			throw new IllegalArgumentException("Invalid username");
 		}
@@ -67,10 +81,13 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 		if (isLoggedIn()) {
 			throw new IllegalStateException("Already logged in");
 		}
+		if (notificationPort < 1 || notificationPort > 65535) {
+			throw new IllegalArgumentException("Invalid port");
+		}
 
 		try {
 			this.username = username;
-
+			this.notificationEndpoint = new NotificationEndpoint(ipAddress, notificationPort);
 			/* Make sure the user is logged out when the connection is closed */
 			addCloseListener(new EventHandler<DisconnectedEvent>() {
 				@Override
@@ -118,6 +135,7 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 			 */
 			onLogout.removeHandlers();
 			username = null;
+			notificationEndpoint = null;
 
 			if (t != null) {
 				/* Checked exceptions are not possible */
@@ -170,7 +188,8 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 	 */
 	@Override
 	public void close() {
-		if (!tcpSocket.isClosed()) {
+		if (!closed) {
+			closed = true;
 			Throwable t = null;
 
 			if (username != null) {
@@ -190,7 +209,7 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 			onClose.removeHandlers();
 
 			try {
-				tcpSocket.close();
+				channel.close();
 			} catch (Exception ex) {
 				// Ignore
 			}
@@ -207,8 +226,19 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 	}
 
 	@Override
+	public boolean isClosed() {
+		return closed;
+	}
+
+	@Override
 	public void setChannel(AuctionProtocolChannel channel) {
 		this.channel = channel;
 
 	}
+
+	@Override
+	public NotificationEndpoint getNotificationEndpoint() {
+		return notificationEndpoint;
+	}
+
 }

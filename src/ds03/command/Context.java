@@ -2,6 +2,7 @@ package ds03.command;
 
 import ds03.client.util.ClientConsole;
 import ds03.io.AuctionProtocolChannel;
+import ds03.util.NotificationEndpoint;
 
 public interface Context {
 	public boolean login(String username, String password);
@@ -17,5 +18,7 @@ public interface Context {
 	public AuctionProtocolChannel getChannel();
 
 	public void setChannel(AuctionProtocolChannel channel);
+
+	public NotificationEndpoint getNotificationEndpoint();
 
 }

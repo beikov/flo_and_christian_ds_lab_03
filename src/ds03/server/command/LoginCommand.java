@@ -22,9 +22,22 @@ public class LoginCommand implements Command {
 	@Override
 	public void execute(Context context, String[] args) {
 		String username = null;
+		int notificationPort = -1;
+		String key = null;
 
 		if (args.length > 0) {
 			username = args[0];
+		}
+
+		if (args.length > 1) {
+			try {
+				notificationPort = Integer.parseInt(args[1]);
+			} catch (NumberFormatException e) {
+				throw new IllegalArgumentException("Invalid notification port.");
+			}
+		}
+		if (args.length > 2) {
+			key = args[2];
 		}
 
 		if (context.isLoggedIn()) {
@@ -33,41 +46,45 @@ public class LoginCommand implements Command {
 				(AuctionServerUserContext) context)) {
 			try {
 				/* get user public key */
-				File clientPublicKeyFile = new File(SecurityUtils.getPathToClientKeyDir(),
+				File clientPublicKeyFile = new File(
+						SecurityUtils.getPathToClientKeyDir(),
 						username.toLowerCase() + ".pub.pem");
 				/* check if the public key exists */
 				if (!clientPublicKeyFile.exists()) {
-					throw new RuntimeException("ERROR: Could not find client public key");
+					throw new RuntimeException(
+							"ERROR: Could not find client public key");
 				}
-				
-				File clientSecretKeyFile = new File(SecurityUtils.getPathToClientKeyDir(),
+
+				File clientSecretKeyFile = new File(
+						SecurityUtils.getPathToClientKeyDir(),
 						username.toLowerCase() + ".key");
 
 				if (!clientSecretKeyFile.exists()) {
-					throw new RuntimeException("ERROR: No secret key for " + args[1]
-							+ " exists.");
+					throw new RuntimeException("ERROR: No secret key for "
+							+ username + " exists.");
 				}
 
-				PublicKey publicKey = SecurityUtils.getPublicKey(clientPublicKeyFile
-						.getAbsolutePath());
-				
+				PublicKey publicKey = SecurityUtils
+						.getPublicKey(clientPublicKeyFile.getAbsolutePath());
+
 				if (publicKey == null) {
 					throw new RuntimeException(
 							"ERROR: Client public key could not be read.");
 				}
-				
-				Key secretKey = SecurityUtils.getSecretKey(clientSecretKeyFile.getAbsolutePath());
-				
+
+				Key secretKey = SecurityUtils.getSecretKey(clientSecretKeyFile
+						.getAbsolutePath());
+
 				if (secretKey == null) {
 					throw new RuntimeException(
 							"ERROR: Secretkey could not be read.");
 				}
 
-
 				context.setChannel(HandshakeUtils.receiveHandshake(context,
-						args[1], publicKey, secretKey));
+						key, publicKey, secretKey));
 
-				context.login(username, args[1]);
+				((AuctionServerUserContext) context).login(username, key,
+						notificationPort);
 				context.getChannel().write(
 						"Successfully logged in as " + username + "!");
 			} catch (RuntimeException ex) {

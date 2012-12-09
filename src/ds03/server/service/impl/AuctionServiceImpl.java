@@ -7,13 +7,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -32,7 +29,6 @@ import ds03.server.exception.RejectedException;
 import ds03.server.service.AuctionService;
 import ds03.server.service.UserService;
 import ds03.server.util.Formats;
-import ds03.server.util.TimedTask;
 
 public class AuctionServiceImpl implements AuctionService {
 
@@ -194,8 +190,7 @@ public class AuctionServiceImpl implements AuctionService {
 
 				if (!isGroupBid && groupBids.containsKey(id)) {
 					try {
-					removeGroupBid(id,
-							"Please use a higher bid price.");
+						removeGroupBid(id, "Please use a higher bid price.");
 					} catch (Exception e) {
 						/* We can not do anything here */
 					}
@@ -267,20 +262,21 @@ public class AuctionServiceImpl implements AuctionService {
 				throw new RejectedException(
 						"No more group bids allowed for now. Try again later.");
 			}
-			
+
 			boolean hasSlot = false;
-			
-			for(Bid b : groupBids.values()) {
-				if(b.getBidUser().equals(user)) {
+
+			for (Bid b : groupBids.values()) {
+				if (b.getBidUser().equals(user)) {
 					hasSlot = true;
 					break;
 				}
 			}
 
-			if(hasSlot){
-				throw new RejectedException("No more group bids allowed for now. Try again later.");
+			if (hasSlot) {
+				throw new RejectedException(
+						"No more group bids allowed for now. Try again later.");
 			}
-			
+
 			// queue a group bid
 			final Bid bid = new Bid(amount, user);
 			groupBids.put(id, bid);

@@ -36,12 +36,11 @@ public class BidCommand implements Command {
 				/* Service will throw an exception with a good message */
 			}
 		}
-		
-		doBid(context, id, amount);
-		}
-	
-	protected void doBid(Context context, Long id, BigDecimal amount) {
 
+		doBid(context, id, amount);
+	}
+
+	protected void doBid(Context context, Long id, BigDecimal amount) {
 
 		final Auction auction = bidService.bid(context.getUsername(), id,
 				amount);

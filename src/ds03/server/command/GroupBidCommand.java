@@ -3,9 +3,7 @@ package ds03.server.command;
 import java.math.BigDecimal;
 
 import ds03.command.Context;
-import ds03.model.Auction;
 import ds03.server.service.AuctionService;
-import ds03.server.util.Formats;
 
 public class GroupBidCommand extends BidCommand {
 

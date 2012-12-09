@@ -6,7 +6,6 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,85 +45,28 @@ public class AuctionServer {
 			// This normally should not happen
 		}
 
-		final ServerSocket serverSocket;
-
-		try {
-			serverSocket = new ServerSocket();
-			serverSocket.bind(new InetSocketAddress(port));
-		} catch (Exception ex) {
-			throw new RuntimeException("Could not create server socket!", ex);
-		}
-
 		final ExecutorService threadPool = Executors
 				.newFixedThreadPool(THREADS);
-		final ScheduledExecutorService schedulerService = Executors.newScheduledThreadPool(2);
-		
-		AuctionService.INSTANCE.setSchedulerService(schedulerService);
+		final ScheduledExecutorService schedulerService = Executors
+				.newScheduledThreadPool(2);
 
-		/*
-		 * We use concurrent hash map for performance and because there is no
-		 * ConcurrentHashSet
-		 */
-		final Map<ClientHandler, Object> clientHandlers = new ConcurrentHashMap<ClientHandler, Object>();
+		AuctionService.INSTANCE.setSchedulerService(schedulerService);
+		
 
 		/* The thread for accepting connections */
-		new Thread() {
-			@Override
-			public void run() {
-				while (!serverSocket.isClosed()) {
-					try {
-						final AuctionServerUserContextImpl connection = new AuctionServerUserContextImpl(
-								serverSocket.accept());
-						final ClientHandler handler = new ClientHandler(
-								connection);
-
-						clientHandlers.put(handler, new Object());
-
-						connection
-								.addCloseListener(new EventHandler<DisconnectedEvent>() {
-
-									@Override
-									public void handle(DisconnectedEvent event) {
-										clientHandlers.remove(handler);
-									}
-
-								});
-
-						threadPool.execute(handler);
-					} catch (Exception ex) {
-						// Don't care about the errors since logging is not
-						// required
-						// if(!serverSocket.isClosed()){
-						// ex.printStackTrace(System.err);
-						// }
-					}
-				}
-			}
-		}.start();
+		final ClientDispatcherThread clientDispatcherThread = new ClientDispatcherThread(port, threadPool);
+		clientDispatcherThread.start();
 
 		final Runnable shutdownHook = new Runnable() {
 
 			@Override
 			public void run() {
-				if (serverSocket != null) {
-					try {
-						serverSocket.close();
-					} catch (Exception ex) {
-						// Ignore
-					}
+				if(clientDispatcherThread != null) {
+					clientDispatcherThread.close();
 				}
 
 				if (threadPool != null) {
 					threadPool.shutdown();
-				}
-
-				final Iterator<Map.Entry<ClientHandler, Object>> iter = clientHandlers
-						.entrySet().iterator();
-
-				while (iter.hasNext()) {
-					final ClientHandler handler = iter.next().getKey();
-					handler.stop();
-					iter.remove();
 				}
 
 				schedulerService.shutdownNow();
@@ -136,7 +78,15 @@ public class AuctionServer {
 
 		try {
 			// Requirement states that a simple enter hit should end the server
-			in.readLine();
+			String command = null;
+			
+			while(!"".equals((command = in.readLine()))){
+				if("!pause".equals(command)) {
+					clientDispatcherThread.deactivate();
+				} else if("!resume".equals(command)) {
+					clientDispatcherThread.activate();
+				}
+			}
 		} catch (Exception ex) {
 			ex.printStackTrace(System.err);
 		}
@@ -145,8 +95,10 @@ public class AuctionServer {
 	}
 
 	private static void usage() {
-		System.out.println("Usage: " + AuctionServer.class.getSimpleName()
-				+ " <tcpPort>");
+		System.out
+				.println("Usage: "
+						+ AuctionServer.class.getSimpleName()
+						+ " <tcpPort> <analyticsBindingName> <billingBindingName> <pathToServerPrivateKey> <pathToClientKeysDir>");
 		System.exit(1);
 	}
 }

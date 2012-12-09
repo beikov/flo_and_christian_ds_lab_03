@@ -12,5 +12,9 @@ public interface AuctionServerUserContext extends Context {
 	public void addCloseListener(EventHandler<DisconnectedEvent> handler);
 
 	public void close();
+	
+	public boolean isClosed();
+
+	public boolean login(String username, String key, int notificationPort);
 
 }

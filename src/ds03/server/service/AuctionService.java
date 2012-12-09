@@ -20,9 +20,9 @@ public interface AuctionService extends Serializable {
 			String description);
 
 	public Auction bid(String user, Long id, BigDecimal amount);
-	
+
 	public void groupBid(String user, Long id, BigDecimal amount);
-	
+
 	public void confirm(String user, Long id, BigDecimal amount, String bidUser);
 
 	public void setSchedulerService(ScheduledExecutorService schedulerService);
