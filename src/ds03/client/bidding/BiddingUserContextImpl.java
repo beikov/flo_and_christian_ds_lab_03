@@ -1,10 +1,8 @@
 package ds03.client.bidding;
 
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,7 +38,7 @@ public class BiddingUserContextImpl implements BiddingUserContext {
 		if (notificationPort < 1 || notificationPort > 65535) {
 			throw new IllegalArgumentException("Invalid notification port");
 		}
-		
+
 		this.clientConsole = clientConsole;
 		this.host = host;
 		this.port = port;
@@ -85,7 +83,8 @@ public class BiddingUserContextImpl implements BiddingUserContext {
 
 		AuctionProtocolChannel channel = this.channel;
 
-		while (channel != null && channel instanceof AuctionProtocolChannelDecorator) {
+		while (channel != null
+				&& channel instanceof AuctionProtocolChannelDecorator) {
 			channel = ((AuctionProtocolChannelDecorator) channel).getDelegate();
 		}
 

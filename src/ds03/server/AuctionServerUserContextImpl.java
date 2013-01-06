@@ -28,8 +28,7 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 		this.onLogout = new EventBus<LogoutEvent>();
 
 		try {
-			this.ipAddress = tcpSocket
-					.getInetAddress().getHostAddress();
+			this.ipAddress = tcpSocket.getInetAddress().getHostAddress();
 			this.channel = new AuctionProtocolChannelImpl(tcpSocket);
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
@@ -87,7 +86,8 @@ public class AuctionServerUserContextImpl implements AuctionServerUserContext {
 
 		try {
 			this.username = username;
-			this.notificationEndpoint = new NotificationEndpoint(ipAddress, notificationPort);
+			this.notificationEndpoint = new NotificationEndpoint(ipAddress,
+					notificationPort);
 			/* Make sure the user is logged out when the connection is closed */
 			addCloseListener(new EventHandler<DisconnectedEvent>() {
 				@Override

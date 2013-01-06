@@ -6,7 +6,7 @@ public class SingleBid {
 
 	private final long auctionId;
 	private final BigDecimal amount;
-	
+
 	public SingleBid(long auctionId, BigDecimal amount) {
 		super();
 		this.auctionId = auctionId;
@@ -20,6 +20,5 @@ public class SingleBid {
 	public BigDecimal getAmount() {
 		return amount;
 	}
-	
-	
+
 }

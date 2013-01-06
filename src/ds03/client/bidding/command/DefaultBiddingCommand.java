@@ -5,6 +5,10 @@ import ds03.io.ProtocolException;
 
 public class DefaultBiddingCommand extends AbstractBiddingCommand {
 
+	public DefaultBiddingCommand(long waitTimeout) {
+		super(waitTimeout);
+	}
+
 	@Override
 	public void execute(BiddingUserContext context, String[] args) {
 		synchronized (context) {
@@ -15,7 +19,7 @@ public class DefaultBiddingCommand extends AbstractBiddingCommand {
 
 	protected void printResults(BiddingUserContext context, String[] args) {
 		String read = null;
-
+		final boolean wasClosed = context.getChannel().isClosed();
 		try {
 			read = context.getChannel().read();
 		} catch (ProtocolException e) {
@@ -23,9 +27,14 @@ public class DefaultBiddingCommand extends AbstractBiddingCommand {
 		}
 
 		if (read == null) {
-			context.getOut()
-					.writeln(
-							"Server currently not available. You can continue bidding.");
+			if (!wasClosed) {
+				waitForReconnection(context);
+				execute(context, args);
+			} else {
+				context.getOut()
+						.writeln(
+								"Server currently not available. You can continue bidding.");
+			}
 		} else {
 			context.getOut().writeln(read);
 		}

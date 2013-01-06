@@ -37,13 +37,15 @@ public class BidCommand implements Command {
 			}
 		}
 
-		doBid(context, id, amount);
+		response(context, id, amount, doBid(context, id, amount));
 	}
 
-	protected void doBid(Context context, Long id, BigDecimal amount) {
+	protected Auction doBid(Context context, Long id, BigDecimal amount) {
+		return bidService.bid(context.getUsername(), id, amount);
+	}
 
-		final Auction auction = bidService.bid(context.getUsername(), id,
-				amount);
+	protected void response(Context context, Long id, BigDecimal amount,
+			Auction auction) {
 		final boolean success = auction.getBidValue().compareTo(amount) < 0;
 		final StringBuilder sb = new StringBuilder();
 

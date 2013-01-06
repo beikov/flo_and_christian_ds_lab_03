@@ -1,6 +1,5 @@
 package ds03.client.bidding;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,7 +12,6 @@ import ds03.util.NotificationEndpoint;
 public abstract class BiddingUserContextDecorator implements BiddingUserContext {
 
 	private final BiddingUserContext delegate;
-	
 
 	public BiddingUserContextDecorator(BiddingUserContext delegate) {
 		super();
@@ -85,6 +83,5 @@ public abstract class BiddingUserContextDecorator implements BiddingUserContext 
 	public Map<SingleBid, Set<TimestampMessage>> getQueuedSingleBids() {
 		return delegate.getQueuedSingleBids();
 	}
-	
-	
+
 }

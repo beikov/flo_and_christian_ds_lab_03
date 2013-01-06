@@ -21,6 +21,9 @@ public interface AuctionService extends Serializable {
 
 	public Auction bid(String user, Long id, BigDecimal amount);
 
+	public Auction bid(String user, Long id, BigDecimal amount,
+			long bidTimestamp);
+
 	public void groupBid(String user, Long id, BigDecimal amount);
 
 	public void confirm(String user, Long id, BigDecimal amount, String bidUser);

@@ -9,8 +9,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import ds03.client.util.ClientConsole;
 import ds03.command.Command;
@@ -22,16 +20,13 @@ import ds03.util.NotificationEndpoint;
 
 public class ServerReconnectorTask implements Runnable {
 
-	private static final int RECONNECT_INTERVAL = 3;
 	private final BiddingUserContext context;
-	private final ScheduledExecutorService schedulerService;
 	private final Command loginCommand;
 
 	public ServerReconnectorTask(BiddingUserContext context,
-			ScheduledExecutorService schedulerService, Command loginCommand) {
+			Command loginCommand) {
 		super();
 		this.context = context;
-		this.schedulerService = schedulerService;
 		this.loginCommand = loginCommand;
 	}
 
@@ -44,7 +39,12 @@ public class ServerReconnectorTask implements Runnable {
 						context.getServerPort());
 				AuctionProtocolChannel channel = new AuctionProtocolChannelImpl(
 						socket);
-				context.setChannel(channel);
+
+				synchronized (context) {
+					context.setChannel(channel);
+					tryLogin();
+					context.notifyAll();
+				}
 			} catch (Exception ex) {
 				// Connect maybe failed, but leave old channel as is
 			}
@@ -109,12 +109,10 @@ public class ServerReconnectorTask implements Runnable {
 					}
 				}
 
-				schedulerService.scheduleAtFixedRate(this, 0,
-						RECONNECT_INTERVAL, TimeUnit.SECONDS);
 				return;
 			}
 
-			if (!tryLogin()) {
+			if (context.isClosed()) {
 				return;
 			}
 
@@ -170,8 +168,9 @@ public class ServerReconnectorTask implements Runnable {
 
 							context.getOut().writeln("");
 							context.getOut().writeln(answer);
-							context.getOut().write(context.getUsername() + "> ");
-							
+							context.getOut()
+									.write(context.getUsername() + "> ");
+
 							queuedSingleBids.remove(bidsToSend.get(i));
 						}
 					}
@@ -224,8 +223,6 @@ public class ServerReconnectorTask implements Runnable {
 			}, new String[] { "!login", context.getUsername() });
 		} catch (Exception ex) {
 			if (context.getChannel().isClosed()) {
-				schedulerService.scheduleAtFixedRate(this, 0,
-						RECONNECT_INTERVAL, TimeUnit.SECONDS);
 				return false;
 			} else {
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();

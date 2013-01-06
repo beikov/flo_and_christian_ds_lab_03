@@ -37,6 +37,7 @@ public class AuctionServiceImpl implements AuctionService {
 
 	private final AtomicLong currentId = new AtomicLong(0);
 	private final ConcurrentMap<Long, Auction> auctions = new ConcurrentHashMap<Long, Auction>();
+	private final ConcurrentMap<Long, Auction> expiredAuctions = new ConcurrentHashMap<Long, Auction>();
 	private final ConcurrentMap<Long, Bid> groupBids = new ConcurrentHashMap<Long, Bid>();
 	private transient EventHandler<Event> overbidHandler = DefaultEventHandler.INSTANCE;
 	private transient EventHandler<AuctionEndedEvent> auctionEndHandler = new AuctionEndedEventHandler();
@@ -47,11 +48,6 @@ public class AuctionServiceImpl implements AuctionService {
 		this.schedulerService = schedulerService;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see ds03.server.service.impl.BidService#getAuctions()
-	 */
 	@Override
 	public List<Auction> getAuctions() {
 		final List<Auction> list = new ArrayList<Auction>();
@@ -64,11 +60,6 @@ public class AuctionServiceImpl implements AuctionService {
 		return list;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see ds03.server.service.impl.BidService#getAuction(long)
-	 */
 	@Override
 	public Auction getAuction(long auctionId) {
 		final Auction auction = auctions.get(auctionId);
@@ -79,12 +70,6 @@ public class AuctionServiceImpl implements AuctionService {
 
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see ds03.server.service.impl.BidService#createAuction(java.lang.String,
-	 * java.lang.Integer, java.lang.String)
-	 */
 	@Override
 	public Auction createAuction(String user, Integer duration,
 			String description) {
@@ -124,7 +109,7 @@ public class AuctionServiceImpl implements AuctionService {
 								/* We can not do anything here */
 							}
 							handler.handle(new AuctionEndedEvent(id));
-							auctions.remove(id);
+							expiredAuctions.put(id, auctions.remove(id));
 						}
 
 					}
@@ -137,19 +122,18 @@ public class AuctionServiceImpl implements AuctionService {
 		return auction;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see ds03.server.service.impl.BidService#bid(java.lang.String,
-	 * java.lang.Integer, java.math.BigDecimal)
-	 */
 	@Override
 	public Auction bid(String user, Long id, BigDecimal amount) {
-		return bid(user, id, amount, false);
+		return bid(user, id, amount, System.currentTimeMillis(), false);
 	}
 
-	private Auction bid(String user, Long id, BigDecimal amount,
-			boolean isGroupBid) {
+	@Override
+	public Auction bid(String user, Long id, BigDecimal amount,
+			long bidTimestamp) {
+		return bid(user, id, amount, bidTimestamp, false);
+	}
+
+	private void checkBid(String user, Long id, BigDecimal amount) {
 		if (user == null || user.isEmpty()) {
 			throw new IllegalArgumentException("Invalid user");
 		}
@@ -161,10 +145,19 @@ public class AuctionServiceImpl implements AuctionService {
 		if (amount == null || amount.compareTo(BigDecimal.ZERO) < 1) {
 			throw new IllegalArgumentException("Invalid amount");
 		}
+	}
 
-		final Auction auction = auctions.get(id);
+	private Auction bid(String user, Long id, BigDecimal amount,
+			long bidTimestamp, boolean isGroupBid) {
+		checkBid(user, id, amount);
+		Auction auction = auctions.get(id);
 
 		if (auction == null) {
+			auction = expiredAuctions.get(id);
+		}
+
+		if (auction == null
+				|| bidTimestamp >= auction.getEndTimestamp().getTimeInMillis()) {
 			throw new IllegalArgumentException("Auction for id " + id
 					+ " does not exist");
 		}
@@ -175,7 +168,7 @@ public class AuctionServiceImpl implements AuctionService {
 		String overbidUser = null;
 
 		synchronized (auction) {
-			if (!auctions.containsKey(id)) {
+			if (!auctions.containsKey(id) && !expiredAuctions.containsKey(id)) {
 				throw new IllegalArgumentException("Auction for id " + id
 						+ " does not exist");
 			}
@@ -354,7 +347,8 @@ public class AuctionServiceImpl implements AuctionService {
 				 * Therefore pass through the values for the bid and complete
 				 * it.
 				 */
-				bid(groupBid.getBidUser(), id, groupBid.getBidValue(), true);
+				bid(groupBid.getBidUser(), id, groupBid.getBidValue(),
+						System.currentTimeMillis(), true);
 				completeGroupBid(id);
 				return;
 			} else {

@@ -3,7 +3,6 @@ package ds03.client.bidding.command;
 import java.io.File;
 import java.security.Key;
 import java.security.PrivateKey;
-import java.util.Map;
 
 import org.bouncycastle.openssl.PasswordFinder;
 
@@ -14,14 +13,14 @@ import ds03.command.Command;
 import ds03.io.AuctionProtocolChannel;
 import ds03.io.ProtocolException;
 import ds03.util.HandshakeUtils;
-import ds03.util.NotificationEndpoint;
 import ds03.util.SecurityUtils;
 
 public class LoginCommand extends AbstractBiddingCommand {
 
 	private final Command getClientListCommand;
 
-	public LoginCommand(Command getClientListCommand) {
+	public LoginCommand(long waitTimeOut, Command getClientListCommand) {
+		super(waitTimeOut);
 		this.getClientListCommand = getClientListCommand;
 	}
 
@@ -88,9 +87,9 @@ public class LoginCommand extends AbstractBiddingCommand {
 			}
 
 			result = newChannel.read();
-			
-			if(result == null) {
-				//server becomes unavailable directly after log in
+
+			if (result == null) {
+				// server becomes unavailable directly after log in
 				throw new ProtocolException();
 			}
 		}

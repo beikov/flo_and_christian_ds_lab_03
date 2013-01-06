@@ -1,6 +1,5 @@
 package ds03.io;
 
-import java.security.Key;
 import java.security.PrivateKey;
 
 import ds03.util.SecurityUtils;
@@ -10,8 +9,8 @@ public class ClientSignatureAuctionProtocolChannel extends
 
 	private final PrivateKey key;
 
-	public ClientSignatureAuctionProtocolChannel(AuctionProtocolChannel delegate,
-			PrivateKey key) {
+	public ClientSignatureAuctionProtocolChannel(
+			AuctionProtocolChannel delegate, PrivateKey key) {
 		super(delegate);
 		this.key = key;
 	}

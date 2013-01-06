@@ -117,7 +117,8 @@ public class SecurityUtils {
 				fis.read(keyBytes);
 				fis.close();
 				byte[] input = Hex.decode(keyBytes);
-				cachedSecretKeys.putIfAbsent(pathToSecretKey, new SecretKeySpec(input, "HmacSHA256"));
+				cachedSecretKeys.putIfAbsent(pathToSecretKey,
+						new SecretKeySpec(input, "HmacSHA256"));
 			} catch (Exception e) {
 				return null;
 			} finally {
@@ -165,13 +166,14 @@ public class SecurityUtils {
 
 	public static synchronized PrivateKey getServerPrivateKey() {
 		if (serverPrivateKey == null) {
-			serverPrivateKey = getPrivateKey(pathToPublicKey, new PasswordFinder() {
-				@Override
-				public char[] getPassword() {
+			serverPrivateKey = getPrivateKey(pathToPublicKey,
+					new PasswordFinder() {
+						@Override
+						public char[] getPassword() {
 
-					return "23456".toCharArray();
-				}
-			});
+							return "23456".toCharArray();
+						}
+					});
 
 			if (serverPrivateKey == null) {
 				throw new RuntimeException("Key not found.");
@@ -229,29 +231,27 @@ public class SecurityUtils {
 
 	public static String createSignature(String response, PrivateKey key) {
 		try {
-			Signature signature = 
-					Signature.getInstance("SHA1withRSA");
+			Signature signature = Signature.getInstance("SHA512withRSA");
 			signature.initSign(key);
 			signature.update(response.getBytes());
-			
+
 			return new String(Base64.encode(signature.sign()));
 		} catch (Exception e) {
 			return null;
 		}
 	}
 
-	public static boolean verifySignature(String response, PublicKey key, String signature) {
+	public static boolean verifySignature(String response, PublicKey key,
+			String signature) {
 		try {
-			Signature sig = 
-					Signature.getInstance("SHA1withRSA");
+			Signature sig = Signature.getInstance("SHA512withRSA");
 			sig.initVerify(key);
 			sig.update(response.getBytes());
-			
+
 			return sig.verify(Base64.decode(signature));
 		} catch (Exception e) {
 			return false;
 		}
 	}
-
 
 }

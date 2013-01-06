@@ -2,17 +2,10 @@ package ds03.server;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import ds03.event.DisconnectedEvent;
-import ds03.event.EventHandler;
 import ds03.server.service.AuctionService;
 import ds03.util.SecurityUtils;
 import ds03.util.ServiceLocator;
@@ -51,17 +44,17 @@ public class AuctionServer {
 				.newScheduledThreadPool(2);
 
 		AuctionService.INSTANCE.setSchedulerService(schedulerService);
-		
 
 		/* The thread for accepting connections */
-		final ClientDispatcherThread clientDispatcherThread = new ClientDispatcherThread(port, threadPool);
+		final ClientDispatcherThread clientDispatcherThread = new ClientDispatcherThread(
+				port, threadPool);
 		clientDispatcherThread.start();
 
 		final Runnable shutdownHook = new Runnable() {
 
 			@Override
 			public void run() {
-				if(clientDispatcherThread != null) {
+				if (clientDispatcherThread != null) {
 					clientDispatcherThread.close();
 				}
 
@@ -79,11 +72,11 @@ public class AuctionServer {
 		try {
 			// Requirement states that a simple enter hit should end the server
 			String command = null;
-			
-			while(!"".equals((command = in.readLine()))){
-				if("!pause".equals(command)) {
+
+			while (!"".equals((command = in.readLine()))) {
+				if ("!pause".equals(command)) {
 					clientDispatcherThread.deactivate();
-				} else if("!resume".equals(command)) {
+				} else if ("!resume".equals(command)) {
 					clientDispatcherThread.activate();
 				}
 			}

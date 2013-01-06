@@ -13,8 +13,8 @@ public class TimestampMessage {
 	public TimestampMessage(String message, String username) {
 		super();
 		this.username = username;
-		
-		if(message == null) {
+
+		if (message == null) {
 			auctionId = -1;
 			amount = null;
 			timestamp = -1;
@@ -22,10 +22,10 @@ public class TimestampMessage {
 		} else {
 			// !timestamp <auctionID> <price> <timestamp> <signature>
 			String[] messageParts = message.split("\\s");
-			if(!"!timestamp".equals(messageParts[0])) {
+			if (!"!timestamp".equals(messageParts[0])) {
 				throw new IllegalArgumentException("Invalid params");
 			}
-			
+
 			try {
 				auctionId = Long.parseLong(messageParts[1]);
 				amount = new BigDecimal(messageParts[2]);
@@ -36,7 +36,7 @@ public class TimestampMessage {
 			}
 		}
 	}
-	
+
 	private TimestampMessage(String username, long timestamp, String signature) {
 		this.username = username;
 		this.timestamp = timestamp;
@@ -47,14 +47,14 @@ public class TimestampMessage {
 
 	public String getSignedBidFormat() {
 		StringBuilder sb = new StringBuilder();
-		sb.append(username).append(":").append(timestamp)
-				.append(":").append(signature);
+		sb.append(username).append(":").append(timestamp).append(":")
+				.append(signature);
 		return sb.toString();
 	}
-	
+
 	public static TimestampMessage fromSignedBidFormat(String signedBidFormat) {
 		String[] messageParts = signedBidFormat.split(":");
-		
+
 		try {
 			String username = messageParts[0];
 			long timestamp = Long.parseLong(messageParts[1]);

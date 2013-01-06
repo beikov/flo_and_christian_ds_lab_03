@@ -1,6 +1,5 @@
 package ds03.client.bidding;
 
-import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -19,12 +18,12 @@ import ds03.client.util.ClientConsole;
 import ds03.command.Command;
 import ds03.command.util.CommandUtils;
 import ds03.command.util.ExceptionHandler;
-import ds03.io.AuctionProtocolChannelImpl;
 import ds03.io.MessageIntegrityException;
 import ds03.util.SecurityUtils;
 
 public class BiddingClient implements Client {
 
+	private static final int RECONNECT_INTERVAL = 3;
 	private static final Logger LOG = Logger.getLogger(BiddingClient.class);
 	private static final Command loginCommand;
 	private static Map<String, Command> loggedOutCommandMap = new HashMap<String, Command>();
@@ -36,10 +35,11 @@ public class BiddingClient implements Client {
 	private final Runnable shutdownHook;
 
 	static {
-		Command getClientListCommand = new GetClientListCommand();
-		loginCommand = new LoginCommand(getClientListCommand);
-		Command logoutCommand = new LogoutCommand();
-		Command defaulCommand = new DefaultBiddingCommand();
+		long waitTimeOut = RECONNECT_INTERVAL * 1000 + 500;
+		Command getClientListCommand = new GetClientListCommand(waitTimeOut);
+		loginCommand = new LoginCommand(waitTimeOut, getClientListCommand);
+		Command logoutCommand = new LogoutCommand(waitTimeOut);
+		Command defaulCommand = new DefaultBiddingCommand(waitTimeOut);
 
 		loggedOutCommandMap.put("!login", loginCommand);
 		loggedOutCommandMap.put("!logout", logoutCommand);
@@ -49,7 +49,7 @@ public class BiddingClient implements Client {
 		loggedInCommandMap.put("!logout", logoutCommand);
 		loggedInCommandMap.put("!list", defaulCommand);
 		loggedInCommandMap.put("!create", defaulCommand);
-		loggedInCommandMap.put("!bid", new BidCommand());
+		loggedInCommandMap.put("!bid", new BidCommand(waitTimeOut));
 		loggedInCommandMap.put("!groupBid", defaulCommand);
 		loggedInCommandMap.put("!confirm", defaulCommand);
 		loggedInCommandMap.put("!getClientList", getClientListCommand);
@@ -83,19 +83,13 @@ public class BiddingClient implements Client {
 
 		final BiddingUserContext con = context; /* avoid getfield opcode */
 		final ServerReconnectorTask reconnectorTask = new ServerReconnectorTask(
-				con, schedulerService, loginCommand);
+				con, loginCommand);
 		getTimeStampThread.start();
+		schedulerService.scheduleAtFixedRate(reconnectorTask, 0,
+				RECONNECT_INTERVAL, TimeUnit.SECONDS);
 
 		while (true) {
-			if (con.getChannel().isClosed() && con.isLoggedIn()) {
-				reconnectorTask.run();
-			}
-			
 			final String request = readRequest();
-			
-			if (con.getChannel().isClosed() && con.isLoggedIn()) {
-				reconnectorTask.run();
-			}
 
 			try {
 				if (!con.isLoggedIn()) {

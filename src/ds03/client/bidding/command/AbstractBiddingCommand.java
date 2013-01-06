@@ -6,6 +6,12 @@ import ds03.command.Context;
 
 public abstract class AbstractBiddingCommand implements Command {
 
+	private final long waitTimeout;
+
+	public AbstractBiddingCommand(long waitTimeout) {
+		this.waitTimeout = waitTimeout;
+	}
+
 	@Override
 	public void execute(Context context, String[] args) {
 		execute((BiddingUserContext) context, args);
@@ -13,6 +19,13 @@ public abstract class AbstractBiddingCommand implements Command {
 
 	public abstract void execute(BiddingUserContext context, String[] args);
 
+	protected void waitForReconnection(BiddingUserContext context) {
+		try {
+			context.wait(waitTimeout);
+		} catch (InterruptedException e) {
+			// don't care
+		}
+	}
 
 	protected String join(String[] args) {
 		final StringBuilder sb = new StringBuilder();

@@ -54,7 +54,8 @@ public class ClientHandler implements Runnable {
 		loggedInCommandMap.put("!create", new CreateCommand(
 				AuctionService.INSTANCE));
 		loggedInCommandMap.put("!bid", bidCommand);
-		loggedInCommandMap.put("!signedBid", new SignedBidCommand(bidCommand));
+		loggedInCommandMap.put("!signedBid", new SignedBidCommand(
+				AuctionService.INSTANCE));
 	}
 
 	public ClientHandler(final AuctionServerUserContextImpl context) {
