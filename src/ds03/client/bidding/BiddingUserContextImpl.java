@@ -71,12 +71,13 @@ public class BiddingUserContextImpl implements BiddingUserContext {
 	@Override
 	public boolean login(String username, String password) {
 		this.username = username;
-		
-		if(this.manager == null){
+
+		if (this.manager == null) {
 			// Only re instantiate when logout was done
-			this.manager = new P2PManager(username, notificationEndpoint.getPort());
+			this.manager = new P2PManager(username,
+					notificationEndpoint.getPort());
 		}
-		
+
 		return true;
 	}
 

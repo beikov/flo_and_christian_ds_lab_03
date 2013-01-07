@@ -15,7 +15,6 @@ import ds03.client.bidding.command.GetClientListCommand;
 import ds03.client.bidding.command.LoginCommand;
 import ds03.client.bidding.command.LogoutCommand;
 import ds03.client.util.ClientConsole;
-import ds03.client.util.P2PManager;
 import ds03.command.Command;
 import ds03.command.util.CommandUtils;
 import ds03.command.util.ExceptionHandler;
@@ -62,8 +61,7 @@ public class BiddingClient implements Client {
 		try {
 			context = new BiddingUserContextImpl(out, host, tcpPort,
 					notificationPort);
-			reconnectorTask = new ServerReconnectorTask(
-					context, loginCommand);
+			reconnectorTask = new ServerReconnectorTask(context, loginCommand);
 			schedulerService = Executors.newScheduledThreadPool(1);
 		} catch (Exception ex) {
 			throw new RuntimeException("Could not connect to server", ex);
@@ -97,8 +95,8 @@ public class BiddingClient implements Client {
 							loggedOutCommandMap, con)) {
 						break;
 					}
-					
-					if(con.isLoggedIn()){
+
+					if (con.isLoggedIn()) {
 						getTimeStampThread = new GetTimestampThread(con);
 						getTimeStampThread.start();
 					}
@@ -119,8 +117,8 @@ public class BiddingClient implements Client {
 							})) {
 						break;
 					}
-					
-					if(!con.isLoggedIn() && getTimeStampThread != null){
+
+					if (!con.isLoggedIn() && getTimeStampThread != null) {
 						getTimeStampThread.kill();
 						getTimeStampThread = null;
 					}

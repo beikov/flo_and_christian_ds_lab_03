@@ -1,23 +1,15 @@
 package ds03.client.bidding;
 
 import java.io.File;
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.security.PrivateKey;
 
 import org.bouncycastle.openssl.PasswordFinder;
 
-import ds03.client.util.P2PManager;
 import ds03.client.util.RequestCallback;
-import ds03.io.AuctionProtocolChannel;
-import ds03.io.AuctionProtocolChannelImpl;
-import ds03.io.ClientSignatureAuctionProtocolChannel;
 import ds03.util.SecurityUtils;
 
-public class GetTimestampThread extends Thread implements RequestCallback{
+public class GetTimestampThread extends Thread implements RequestCallback {
 	private final BiddingUserContext context;
 	private volatile boolean running = true;
 	private Object lock = new Object();
@@ -30,9 +22,10 @@ public class GetTimestampThread extends Thread implements RequestCallback{
 	@Override
 	public void run() {
 		try {
-			context.getP2PManager().registerService("getTimeStampMessage", this);
+			context.getP2PManager()
+					.registerService("getTimeStampMessage", this);
 			context.getP2PManager().scanService("Name", "getTimeStampMessage");
-			
+
 			synchronized (lock) {
 				while (running) {
 					lock.wait();
@@ -44,7 +37,7 @@ public class GetTimestampThread extends Thread implements RequestCallback{
 			context.getP2PManager().close();
 		}
 	}
-	
+
 	@Override
 	public String service(String message) {
 		if (!context.isLoggedIn()) {
@@ -52,28 +45,24 @@ public class GetTimestampThread extends Thread implements RequestCallback{
 		}
 
 		File clientPrivateKeyFile = new File(
-				SecurityUtils.getPathToClientKeyDir(), context
-						.getUsername().toLowerCase() + ".pem");
+				SecurityUtils.getPathToClientKeyDir(), context.getUsername()
+						.toLowerCase() + ".pem");
 
 		if (!clientPrivateKeyFile.exists()) {
 			throw new RuntimeException("ERROR: No private key for "
 					+ context.getUsername() + " exists.");
 		}
-		
+
 		PrivateKey privateKey = SecurityUtils.getPrivateKey(
-				clientPrivateKeyFile.getAbsolutePath(),
-				new PasswordFinder() {
+				clientPrivateKeyFile.getAbsolutePath(), new PasswordFinder() {
 					@Override
 					public char[] getPassword() {
 
-						return context
-								.getOut()
-								.prompt("Enter Passphrase: ")
+						return context.getOut().prompt("Enter Passphrase: ")
 								.toCharArray();
 					}
 				});
-		
-		
+
 		final String[] requestParts = message.split("\\s");
 		long auctionId = -1;
 		BigDecimal amount = null;
@@ -91,9 +80,8 @@ public class GetTimestampThread extends Thread implements RequestCallback{
 		}
 
 		StringBuilder sb = new StringBuilder();
-		sb.append("!timestamp ").append(auctionId).append(" ")
-				.append(amount).append(" ")
-				.append(System.currentTimeMillis());
+		sb.append("!timestamp ").append(auctionId).append(" ").append(amount)
+				.append(" ").append(System.currentTimeMillis());
 		String response = sb.toString();
 		String signature = SecurityUtils.createSignature(response, privateKey);
 		return context.getUsername() + " " + response + " " + signature;
@@ -105,7 +93,7 @@ public class GetTimestampThread extends Thread implements RequestCallback{
 		synchronized (lock) {
 			lock.notifyAll();
 		}
-		
+
 		context.getP2PManager().close();
 	}
 }

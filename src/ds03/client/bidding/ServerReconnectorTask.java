@@ -5,14 +5,12 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import ds03.client.util.ClientConsole;
-import ds03.client.util.P2PManager;
 import ds03.client.util.RequestStopCondition;
 import ds03.command.Command;
 import ds03.io.AuctionProtocolChannel;
@@ -160,29 +158,34 @@ public class ServerReconnectorTask implements Runnable {
 
 	private void tryGetTimestampMessagesViaP2P(final SingleBid singleBid,
 			final Set<TimestampMessage> timestampMessages) {
-		Map<String, String> results = context.getP2PManager().requestService("Name", "getTimeStampMessage", getTimeStampRequestMessage(singleBid), new RequestStopCondition() {
-			
-			@Override
-			public boolean shouldStop(Map<String, String> results) {
-				Iterator<Map.Entry<String, String>> it = results.entrySet().iterator();
-				
-				while(it.hasNext()) {
-					Map.Entry<String, String> entry = it.next();
-					if(timestampMessages
-							.contains(new TimestampMessage(null,
-									entry.getKey()))) {
-						results.remove(entry.getKey());
+		Map<String, String> results = context.getP2PManager().requestService(
+				"Name", "getTimeStampMessage",
+				getTimeStampRequestMessage(singleBid),
+				new RequestStopCondition() {
+
+					@Override
+					public boolean shouldStop(Map<String, String> results) {
+						Iterator<Map.Entry<String, String>> it = results
+								.entrySet().iterator();
+
+						while (it.hasNext()) {
+							Map.Entry<String, String> entry = it.next();
+							if (timestampMessages
+									.contains(new TimestampMessage(null, entry
+											.getKey()))) {
+								results.remove(entry.getKey());
+							}
+						}
+
+						return results.size() + timestampMessages.size() >= 2;
 					}
-				}
-				
-				return results.size() + timestampMessages.size() >= 2;
-			}
-		}, 10000);
+				}, 10000);
 		Iterator<Map.Entry<String, String>> it = results.entrySet().iterator();
-		
-		while(it.hasNext()) {
+
+		while (it.hasNext()) {
 			Map.Entry<String, String> entry = it.next();
-			timestampMessages.add(new TimestampMessage(entry.getValue(), entry.getKey()));
+			timestampMessages.add(new TimestampMessage(entry.getValue(), entry
+					.getKey()));
 		}
 	}
 
@@ -250,7 +253,7 @@ public class ServerReconnectorTask implements Runnable {
 					notificationEndpoint.getPort());
 			AuctionProtocolChannel channel = new AuctionProtocolChannelImpl(
 					socket);
-			
+
 			channel.write(getTimeStampRequestMessage(singleBid));
 			return new TimestampMessage(channel.read(), username);
 		} catch (Exception ex) {

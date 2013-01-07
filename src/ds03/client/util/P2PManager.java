@@ -2,15 +2,10 @@ package ds03.client.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 import net.jxta.discovery.DiscoveryEvent;
 import net.jxta.discovery.DiscoveryListener;
@@ -26,7 +21,6 @@ import net.jxta.peergroup.PeerGroupID;
 import net.jxta.pipe.PipeMsgEvent;
 import net.jxta.pipe.PipeMsgListener;
 import net.jxta.pipe.PipeService;
-import net.jxta.platform.NetworkConfigurator;
 import net.jxta.platform.NetworkManager;
 import net.jxta.protocol.PipeAdvertisement;
 import net.jxta.util.JxtaBiDiPipe;
@@ -52,11 +46,12 @@ public class P2PManager {
 
 	static {
 		LogManager.getLogManager().reset();
-//		Enumeration<String> names = LogManager.getLogManager().getLoggerNames();
-//
-//		while (names.hasMoreElements()) {
-//			Logger.getLogger(names.nextElement()).setLevel(Level.OFF);
-//		}
+		// Enumeration<String> names =
+		// LogManager.getLogManager().getLoggerNames();
+		//
+		// while (names.hasMoreElements()) {
+		// Logger.getLogger(names.nextElement()).setLevel(Level.OFF);
+		// }
 	}
 
 	public P2PManager(String name, int port) {
@@ -313,7 +308,7 @@ public class P2PManager {
 							try {
 								String message = messageElement.toString();
 								String response = callback.service(message);
-								
+
 								Message msg = new Message();
 								msg.addMessageElement(new StringMessageElement(
 										MESSAGE_NAMESPACE, response, null));

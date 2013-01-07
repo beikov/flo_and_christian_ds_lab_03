@@ -26,7 +26,7 @@ public interface BiddingUserContext extends Context {
 	public void queueSingleBid(SingleBid singleBid);
 
 	public Map<SingleBid, Set<TimestampMessage>> getQueuedSingleBids();
-	
+
 	public P2PManager getP2PManager();
 
 }
