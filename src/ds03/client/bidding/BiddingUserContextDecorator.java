@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Set;
 
 import ds03.client.util.ClientConsole;
+import ds03.client.util.P2PManager;
 import ds03.io.AuctionProtocolChannel;
 import ds03.model.SingleBid;
 import ds03.model.TimestampMessage;
@@ -82,6 +83,10 @@ public abstract class BiddingUserContextDecorator implements BiddingUserContext 
 	@Override
 	public Map<SingleBid, Set<TimestampMessage>> getQueuedSingleBids() {
 		return delegate.getQueuedSingleBids();
+	}
+
+	public P2PManager getP2PManager() {
+		return delegate.getP2PManager();
 	}
 
 }

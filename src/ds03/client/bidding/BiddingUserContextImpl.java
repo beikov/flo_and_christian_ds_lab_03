@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import ds03.client.util.ClientConsole;
+import ds03.client.util.P2PManager;
 import ds03.io.AuctionProtocolChannel;
 import ds03.io.AuctionProtocolChannelDecorator;
 import ds03.io.AuctionProtocolChannelImpl;
@@ -19,6 +20,7 @@ import ds03.util.NotificationEndpoint;
 
 public class BiddingUserContextImpl implements BiddingUserContext {
 	private volatile String username;
+	private volatile P2PManager manager;
 	private final ClientConsole clientConsole;
 	private final String host;
 	private final int port;
@@ -69,6 +71,12 @@ public class BiddingUserContextImpl implements BiddingUserContext {
 	@Override
 	public boolean login(String username, String password) {
 		this.username = username;
+		
+		if(this.manager == null){
+			// Only re instantiate when logout was done
+			this.manager = new P2PManager(username, notificationEndpoint.getPort());
+		}
+		
 		return true;
 	}
 
@@ -80,7 +88,7 @@ public class BiddingUserContextImpl implements BiddingUserContext {
 	@Override
 	public void logout() {
 		this.username = null;
-
+		this.manager.close();
 		AuctionProtocolChannel channel = this.channel;
 
 		while (channel != null
@@ -182,6 +190,11 @@ public class BiddingUserContextImpl implements BiddingUserContext {
 	@Override
 	public Map<SingleBid, Set<TimestampMessage>> getQueuedSingleBids() {
 		return queuedSingleBids;
+	}
+
+	@Override
+	public P2PManager getP2PManager() {
+		return this.manager;
 	}
 
 }

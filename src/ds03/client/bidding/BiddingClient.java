@@ -15,6 +15,7 @@ import ds03.client.bidding.command.GetClientListCommand;
 import ds03.client.bidding.command.LoginCommand;
 import ds03.client.bidding.command.LogoutCommand;
 import ds03.client.util.ClientConsole;
+import ds03.client.util.P2PManager;
 import ds03.command.Command;
 import ds03.command.util.CommandUtils;
 import ds03.command.util.ExceptionHandler;
@@ -29,7 +30,8 @@ public class BiddingClient implements Client {
 	private static Map<String, Command> loggedOutCommandMap = new HashMap<String, Command>();
 	private static Map<String, Command> loggedInCommandMap = new HashMap<String, Command>();
 	private final BiddingUserContext context;
-	private final GetTimestampThread getTimeStampThread;
+	private GetTimestampThread getTimeStampThread;
+	private final ServerReconnectorTask reconnectorTask;
 	private final ScheduledExecutorService schedulerService;
 
 	private final Runnable shutdownHook;
@@ -60,7 +62,8 @@ public class BiddingClient implements Client {
 		try {
 			context = new BiddingUserContextImpl(out, host, tcpPort,
 					notificationPort);
-			getTimeStampThread = new GetTimestampThread(context);
+			reconnectorTask = new ServerReconnectorTask(
+					context, loginCommand);
 			schedulerService = Executors.newScheduledThreadPool(1);
 		} catch (Exception ex) {
 			throw new RuntimeException("Could not connect to server", ex);
@@ -82,9 +85,6 @@ public class BiddingClient implements Client {
 	public void run() {
 
 		final BiddingUserContext con = context; /* avoid getfield opcode */
-		final ServerReconnectorTask reconnectorTask = new ServerReconnectorTask(
-				con, loginCommand);
-		getTimeStampThread.start();
 		schedulerService.scheduleAtFixedRate(reconnectorTask, 0,
 				RECONNECT_INTERVAL, TimeUnit.SECONDS);
 
@@ -97,8 +97,12 @@ public class BiddingClient implements Client {
 							loggedOutCommandMap, con)) {
 						break;
 					}
+					
+					if(con.isLoggedIn()){
+						getTimeStampThread = new GetTimestampThread(con);
+						getTimeStampThread.start();
+					}
 				} else {
-
 					if (!CommandUtils.invokeCommand(request,
 							loggedInCommandMap, con, new ExceptionHandler() {
 
@@ -115,7 +119,11 @@ public class BiddingClient implements Client {
 							})) {
 						break;
 					}
-
+					
+					if(!con.isLoggedIn() && getTimeStampThread != null){
+						getTimeStampThread.kill();
+						getTimeStampThread = null;
+					}
 				}
 			} catch (Exception e) {
 				con.getOut().write("ERROR: Connection to server terminated");

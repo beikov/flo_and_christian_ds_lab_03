@@ -3,6 +3,7 @@ package ds03.client.bidding;
 import java.util.Map;
 import java.util.Set;
 
+import ds03.client.util.P2PManager;
 import ds03.command.Context;
 import ds03.model.SingleBid;
 import ds03.model.TimestampMessage;
@@ -25,5 +26,7 @@ public interface BiddingUserContext extends Context {
 	public void queueSingleBid(SingleBid singleBid);
 
 	public Map<SingleBid, Set<TimestampMessage>> getQueuedSingleBids();
+	
+	public P2PManager getP2PManager();
 
 }
