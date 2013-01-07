@@ -21,6 +21,7 @@ import net.jxta.peergroup.PeerGroupID;
 import net.jxta.pipe.PipeMsgEvent;
 import net.jxta.pipe.PipeMsgListener;
 import net.jxta.pipe.PipeService;
+import net.jxta.platform.NetworkConfigurator;
 import net.jxta.platform.NetworkManager;
 import net.jxta.protocol.PipeAdvertisement;
 import net.jxta.util.JxtaBiDiPipe;
@@ -46,24 +47,18 @@ public class P2PManager {
 
 	static {
 		LogManager.getLogManager().reset();
-		// Enumeration<String> names =
-		// LogManager.getLogManager().getLoggerNames();
-		//
-		// while (names.hasMoreElements()) {
-		// Logger.getLogger(names.nextElement()).setLevel(Level.OFF);
-		// }
 	}
 
 	public P2PManager(String name, int port) {
 		try {
 			manager = new NetworkManager(NetworkManager.ConfigMode.ADHOC, name,
 					new File(new File(".cache"), name).toURI());
-			// NetworkConfigurator configurator = manager.getConfigurator();
-			// configurator.setTcpPort(port);
-			// configurator.setTcpEnabled(true);
-			// configurator.setTcpIncoming(true);
-			// configurator.setTcpOutgoing(true);
-			// configurator.setUseMulticast(true);
+			 NetworkConfigurator configurator = manager.getConfigurator();
+			 configurator.setTcpPort(port);
+			 configurator.setTcpEnabled(true);
+			 configurator.setTcpIncoming(true);
+			 configurator.setTcpOutgoing(true);
+			 configurator.setUseMulticast(true);
 			manager.startNetwork();
 			this.name = name;
 		} catch (Exception e) {
@@ -73,22 +68,6 @@ public class P2PManager {
 		PeerGroup netPeerGroup = manager.getNetPeerGroup();
 
 		discovery = netPeerGroup.getDiscoveryService();
-		// discovery.addDiscoveryListener(new DiscoveryListener() {
-		//
-		// @Override
-		// public void discoveryEvent(DiscoveryEvent event) {
-		// Enumeration<Advertisement> ads =
-		// event.getResponse().getAdvertisements();
-		//
-		// System.out.println("Discovered Advertisements:");
-		//
-		// while(ads.hasMoreElements()){
-		// System.out.println(ads.nextElement().getID().toURI());
-		// }
-		//
-		// System.out.println();
-		// }
-		// });
 		publisherThread = new PublisherThread();
 		scannerThread = new ScannerThread();
 
