@@ -2,6 +2,7 @@ build/
 .project
 .classpath
 .settings
+.cache/
 
 src/.DS_Store
 lib/.DS_Store
