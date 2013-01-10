@@ -31,7 +31,7 @@ public class AESAuctionProtocolChannel extends AuctionProtocolChannelDecorator {
 	@Override
 	public void write(String response) {
 		try {
-			super.write(new String(encryptCipher.doFinal(response.getBytes())));
+			super.write(encryptCipher.doFinal(response.getBytes()));
 		} catch (Exception e) {
 			throw new ProtocolException("Protocol error", e);
 		}
@@ -39,16 +39,16 @@ public class AESAuctionProtocolChannel extends AuctionProtocolChannelDecorator {
 
 	@Override
 	public String read() {
-		String read = super.read();
+		byte[] read = super.readBytes();
 
 		if (read == null) {
 			return null;
-		} else if (read.isEmpty()) {
-			return read;
+		} else if (read.length < 1) {
+			return "";
 		}
 
 		try {
-			return new String(decryptCipher.doFinal(read.getBytes()));
+			return new String(decryptCipher.doFinal(read));
 		} catch (Exception e) {
 			throw new ProtocolException("Protocol error", e);
 		}

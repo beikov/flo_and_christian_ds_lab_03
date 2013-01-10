@@ -1,26 +1,23 @@
 package ds03.io;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 
 public class AuctionProtocolChannelImpl implements AuctionProtocolChannel {
 
 	private final Socket socket;
-	private OutputStream out;
-	private InputStream in;
+	private DataOutputStream out;
+	private DataInputStream in;
 	private volatile boolean closed = false;
 
 	public AuctionProtocolChannelImpl(Socket socket) {
 		this.socket = socket;
 
 		try {
-			this.out = new BufferedOutputStream(socket.getOutputStream());
-			this.in = new BufferedInputStream(socket.getInputStream());
+			this.out = new DataOutputStream(socket.getOutputStream());
+			this.in = new DataInputStream(socket.getInputStream());
 		} catch (Exception e) {
 			close();
 		}
@@ -35,13 +32,20 @@ public class AuctionProtocolChannelImpl implements AuctionProtocolChannel {
 	public void write(String response) {
 		if (!closed) {
 			try {
-				final byte[] bytes = response.getBytes();
+				out.writeUTF(response);
+				out.flush();
+			} catch (Exception ex) {
+				close();
+			}
+		}
+	}
 
-				ByteBuffer sizeBuffer = ByteBuffer.allocate(4);
-				sizeBuffer.putInt(bytes.length);
-
-				out.write(sizeBuffer.array());
-				out.write(bytes);
+	@Override
+	public void write(byte[] response) {
+		if (!closed) {
+			try {
+				out.writeInt(response.length);
+				out.write(response);
 				out.flush();
 			} catch (Exception ex) {
 				close();
@@ -58,29 +62,32 @@ public class AuctionProtocolChannelImpl implements AuctionProtocolChannel {
 	public String read() {
 		if (!closed) {
 			try {
-				final byte[] sizeBytes = new byte[4];
+				return in.readUTF();
+			} catch (Exception ex) {
+				close();
+				return null;
+			}
+		}
 
-				if (in.read(sizeBytes) != 4) {
-					throw new ProtocolException(
-							"Protocol error, not enough bytes are available to read");
-				}
+		return null;
+	}
 
-				final ByteBuffer sizeBuffer = ByteBuffer.allocate(4);
-				sizeBuffer.put(sizeBytes);
-				final int size = sizeBuffer.getInt(0);
-
+	@Override
+	public byte[] readBytes() {
+		if (!closed) {
+			try {
+				int size = in.readInt();
+				
 				if (size == -1) {
 					return null;
 				}
-
+				
 				final byte[] bytes = new byte[size];
 
 				if (in.read(bytes, 0, size) != size) {
 					throw new ProtocolException(
 							"Protocol error, not enough bytes are available to read");
 				}
-
-				return new String(bytes);
 			} catch (Exception ex) {
 				close();
 				return null;

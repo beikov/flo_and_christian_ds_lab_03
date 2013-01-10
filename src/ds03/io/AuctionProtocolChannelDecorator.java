@@ -17,8 +17,16 @@ public abstract class AuctionProtocolChannelDecorator implements
 		delegate.write(response);
 	}
 
+	public void write(byte[] response) {
+		delegate.write(response);
+	}
+
 	public String read() {
 		return delegate.read();
+	}
+
+	public byte[] readBytes() {
+		return delegate.readBytes();
 	}
 
 	@Override
