@@ -6,10 +6,10 @@
     <property name="build.dir" value="build"/>
 
     <!-- You need to update these properties!-->
-    <property name="server.name" value="ds03.server.ServerMain"/><!-- Server's full class name (including the package) -->
+    <property name="server.name" value="ds03.server.AuctionServer"/><!-- Server's full class name (including the package) -->
     <property name="server.host" value="localhost"/><!-- Auction Server's host -->
-    <property name="client.name" value="ds03.client.ClientMain"/><!-- Bidding Client's full class name (including the package) -->
-    <property name="mgmtclient.name" value="ds03.client.ManagementClientMain"/><!-- Management Client's full class name (including the package) -->
+    <property name="client.name" value="ds03.client.bidding.BiddingClient"/><!-- Bidding Client's full class name (including the package) -->
+    <property name="mgmtclient.name" value="ds03.client.management.ManagementClientMain"/><!-- Management Client's full class name (including the package) -->
     <property name="analytics.name" value="ds03.server.AnalyticsServer"/><!-- Analytics Server's full class name (including the package) -->
     <property name="billing.name" value="ds03.server.BillingServer"/><!-- Billing Server's full class name (including the package) -->
     <property name="analytics.bindingName" value="ds03.server.service.AnalyticsService"/><!-- RMI Binding Name of the Analytics Server -->
