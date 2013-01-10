@@ -293,7 +293,7 @@ public class P2PManager {
 										MESSAGE_NAMESPACE, response, null));
 								bidiPipe.sendMessage(msg);
 							} catch (Exception e) {
-								e.printStackTrace();
+								//e.printStackTrace();
 							} finally {
 								try {
 									bidiPipe.close();
@@ -305,7 +305,7 @@ public class P2PManager {
 					});
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 			} finally {
 				if (serverPipe != null) {
 					try {
